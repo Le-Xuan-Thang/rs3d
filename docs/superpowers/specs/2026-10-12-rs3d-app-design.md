@@ -53,7 +53,7 @@ Laptop (Win/macOS/Linux) ── rs3d-app ── browser / native window
 | Charts | NiceGUI `ui.echart` |
 | Seismic data | ObsPy (SeedLink, SDS, miniSEED, response, PNG/PDF plots) |
 | SSH/SFTP | Paramiko |
-| Device discovery | `zeroconf` (mDNS) |
+| Device discovery | OS resolver for `rs.local` names + OS neighbour table, confirmed by SeedLink |
 | Password storage | `keyring` (Credential Manager / Keychain / Secret Service) |
 | Data folders | `platformdirs` |
 
@@ -64,7 +64,7 @@ src/rs3d/
 ├── core/                 # no UI dependency, testable on its own
 │   ├── models.py         # Device, Check, Selection dataclasses
 │   ├── devices.py        # device config read/write (config.toml) + keyring
-│   ├── discovery.py      # mDNS + manual IP; identify a Shake by its SeedLink station code
+│   ├── discovery.py      # rs*.local names + neighbour table + manual IP; confirm via SeedLink station code
 │   ├── netcheck.py       # laptop link-local IP check; [Set IP] command per OS
 │   ├── shell.py          # SSH session wrapper (paramiko): run read-only commands, SFTP
 │   ├── status.py         # read-only checks → list[Check]
@@ -224,18 +224,18 @@ The app never hangs or exits because of a connection problem. Every error become
 1. **v1:** Python package `rs3d-app`, run with `uvx rs3d-app`; opens in the browser at `http://127.0.0.1:<port>`.
 2. **Later:** NiceGUI native mode + PyInstaller → `RS3D-App.exe` (Windows), `RS3D-App.app` (macOS), a Linux build, produced by GitHub Actions.
 
-## 11. To verify on the device before building the affected modules
+## 11. Verified on the device (2026-10-12)
 
-Needs SSH access to the Shake (`myshake`):
-
-1. **Archive:**
-   - does the Shake write to `/opt/data/archive`, and is the layout SDS;
-   - size per day and retention.
-   - If the Shake does **not** record: `archive.py` becomes a laptop-side recorder (SeedLink → SDS) while the app is open. The UI does not change.
-2. **Response:** is there a response file on the Shake, and where.
-   - If not: download StationXML from the Raspberry Shake FDSN service when the laptop has Internet, and cache it in `response/`.
-3. **Data Forwarding:** which file on the Shake holds this setting.
-4. **mDNS:** does the Shake advertise itself through Avahi, and under which name.
+| Item | Finding | Design consequence |
+|---|---|---|
+| Archive | SDS layout at `/opt/data/archive/<YEAR>/AM/R77A7/EH?.D/AM.R77A7.00.EH?.D.<YEAR>.<DOY>`, files world-readable (SFTP as `myshake` works). About 28 MB per channel per day (~85 MB/day). | `archive.py` mirrors this tree into the local SDS store as-is. |
+| Retention | `archkeep` = **7 days** (`/opt/settings/config/config.json` → `other.archkeep`, also `ARCH_KEEP.txt`). Older days are deleted by the Shake. | Status shows the archive range and retention; warns when the oldest Shake day is about to be deleted and has not been downloaded. Users must sync at least weekly (or raise `archkeep` in the Shake web UI). |
+| Data Forwarding | `config.json` → `dataSharing.enabled` (currently `false`). | Status reads this key over SSH. |
+| Password changed | Marker file `/opt/settings/user/.pwchanged` exists after the default password is changed. | Password check = marker exists, instead of comparing passwords. |
+| Station codes | `config.json` / `/opt/settings/sys/{NET,STN,LOC}.txt` = AM / R77A7 / 00; SeedLink port in `SL-port.txt` = 18000. | Discovery can also read codes over SSH; SeedLink INFO remains the primary source. |
+| Response | No response file on the Shake. FDSN `RASPISHAKE` (`https://data.raspberryshake.org`) has AM.R77A7 with an open epoch since 2025-09-25, sensitivity 3.6e8 counts/(m/s) at 5 Hz. | `response.py` downloads StationXML (level=response) once when the laptop has Internet and caches it in `response/AM.R77A7.xml`. |
+| mDNS | Avahi publishes host name **`rs.local`** on `eth0` and `wlan0` (no services). A second Shake would become `rs-2.local`, etc. The Shake's MAC prefix is `b8:27:eb` (Raspberry Pi). | Discovery: resolve `rs.local`, `rs-2.local` … `rs-9.local` with the OS resolver, plus link-local entries from the OS neighbour table; keep only `169.254.0.0/16` addresses (Ethernet only, not the Wi-Fi address); confirm each candidate with SeedLink INFO on port 18000. No `zeroconf` dependency needed. |
+| Clock | `ntpd` currently syncs from the laptop (`*169.254.8.11`, offset < 1 ms). The Wi-Fi network gives an IP but **no Internet** (DNS and outbound TCP fail), so the pool servers are unreachable. | The Clock check must show the selected source. Without the laptop the Shake has no time source until Wi-Fi Internet works or GPS is added. |
 
 ## 12. Later
 
