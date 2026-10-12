@@ -1,0 +1,17 @@
+[project]
+name = "ncrep-raspberryshake"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "obspy>=1.5.1",
+    "rsudp>=2.2.1",
+    "setuptools<81",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.4.0",
+    "notebook>=7.6.3",
+]
