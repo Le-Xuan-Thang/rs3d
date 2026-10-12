@@ -55,10 +55,12 @@ class RingBuffer:
         return max(ends) if ends else None
 
     def snapshot(self, channel: str, seconds: float, end: float | None = None,
-                 max_points: int = 2000) -> tuple[np.ndarray, np.ndarray]:
+                 max_points: int = 2000, bandpass: tuple[float, float] | None = None,
+                 ) -> tuple[np.ndarray, np.ndarray]:
         """(times, values) for the last `seconds` before `end`. A NaN separates non-contiguous chunks.
 
-        Long windows are decimated by min/max pairs so peaks stay visible.
+        `bandpass` filters each contiguous chunk on its own (zero-phase, 4 poles) before
+        long windows are decimated by min/max pairs, so peaks stay visible.
         """
         end = end if end is not None else (self.latest() or time.time())
         start = end - seconds
@@ -74,6 +76,8 @@ class RingBuffer:
                 continue
             t = c.start + np.arange(i0, i1) / c.rate
             v = c.data[i0:i1]
+            if bandpass is not None:
+                v = _bandpass(v, c.rate, *bandpass)
             if times:
                 times.append(np.array([t[0]]))
                 values.append(np.array([np.nan]))
@@ -87,22 +91,39 @@ class RingBuffer:
         return t, v
 
 
+def _bandpass(v: np.ndarray, rate: float, fmin: float, fmax: float) -> np.ndarray:
+    """Zero-phase Butterworth band-pass of one contiguous chunk; too-short chunks are only demeaned."""
+    from scipy.signal import butter, sosfiltfilt
+
+    v = v - v.mean()
+    sos = butter(2, [fmin, min(fmax, 0.45 * rate)], btype="bandpass", fs=rate, output="sos")
+    padlen = 3 * (2 * len(sos) + 1)
+    return sosfiltfilt(sos, v) if len(v) > padlen else v
+
+
 def _minmax_decimate(t: np.ndarray, v: np.ndarray, max_points: int) -> tuple[np.ndarray, np.ndarray]:
-    bins = max_points // 2
-    edges = np.linspace(0, len(t), bins + 1).astype(int)
-    out_t, out_v = [], []
-    for a, b in zip(edges[:-1], edges[1:]):
-        if b <= a:
-            continue
-        seg = v[a:b]
-        if np.all(np.isnan(seg)):
-            out_t.append(t[a])
+    """Keep min and max of each bin. Each contiguous segment (between NaN markers) is decimated
+    on its own, so gaps survive."""
+    breaks = np.flatnonzero(np.isnan(v))
+    bounds = np.concatenate([[-1], breaks, [len(v)]])
+    segments = [(a + 1, b) for a, b in zip(bounds[:-1], bounds[1:]) if b > a + 1]
+    total = sum(b - a for a, b in segments)
+    out_t: list[float] = []
+    out_v: list[float] = []
+    for k, (a, b) in enumerate(segments):
+        if k:
+            out_t.append(t[a - 1])
             out_v.append(np.nan)
-            continue
-        lo, hi = a + int(np.nanargmin(seg)), a + int(np.nanargmax(seg))
-        for i in sorted((lo, hi)):
-            out_t.append(t[i])
-            out_v.append(v[i])
+        bins = max(1, int(max_points // 2 * (b - a) / total))
+        edges = np.linspace(a, b, bins + 1).astype(int)
+        for lo_edge, hi_edge in zip(edges[:-1], edges[1:]):
+            if hi_edge <= lo_edge:
+                continue
+            seg = v[lo_edge:hi_edge]
+            lo, hi = lo_edge + int(np.argmin(seg)), lo_edge + int(np.argmax(seg))
+            for i in sorted({lo, hi}):
+                out_t.append(t[i])
+                out_v.append(v[i])
     return np.array(out_t), np.array(out_v)
 
 

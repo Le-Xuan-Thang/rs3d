@@ -96,3 +96,24 @@ def test_reconnects_with_backoff_and_resets_after_success():
 def test_is_stale_before_any_data():
     live = LiveStream(lambda: FakeSource([]))
     assert live.is_stale()
+
+
+def test_bandpass_removes_offset_and_keeps_gap():
+    buf = RingBuffer()
+    t = np.arange(1000) / 100.0
+    wave = 1000.0 + 50 * np.sin(2 * np.pi * 5 * t)  # 5 Hz on a big offset
+    buf.add(Trace(wave, header={"channel": "EHZ", "starttime": T0, "sampling_rate": 100.0}))
+    buf.add(Trace(wave, header={"channel": "EHZ", "starttime": T0 + 20, "sampling_rate": 100.0}))
+    _, raw = buf.snapshot("EHZ", 30)
+    _, flt = buf.snapshot("EHZ", 30, bandpass=(1.0, 10.0))
+    assert np.nanmean(raw) > 900 and abs(np.nanmean(flt)) < 5
+    assert np.isnan(flt).sum() == 1
+    assert 40 < np.nanmax(flt) < 60
+
+
+def test_decimation_keeps_gap_marker():
+    buf = RingBuffer()
+    buf.add(trace("EHZ", T0, 3000))
+    buf.add(trace("EHZ", T0 + 60, 3000))
+    t, v = buf.snapshot("EHZ", 90, max_points=200)
+    assert len(t) <= 201 and np.isnan(v).sum() == 1
