@@ -12,7 +12,11 @@ dependencies = [
     "platformdirs>=4",
     "psutil>=6",
     "tomli-w>=1.2",
+    "nicegui>=3.0",
 ]
+
+[project.scripts]
+rs3d-app = "rs3d.cli:main"
 
 [dependency-groups]
 dev = [
