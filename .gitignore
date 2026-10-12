@@ -20,3 +20,6 @@ rsudp_out/
 
 # LibreOffice lock files
 .~lock.*#
+
+# git worktrees
+.worktrees/
