@@ -23,3 +23,6 @@ rsudp_out/
 
 # git worktrees
 .worktrees/
+
+# pytest
+.pytest_cache/
