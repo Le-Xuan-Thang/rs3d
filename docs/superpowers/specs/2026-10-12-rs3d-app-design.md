@@ -81,7 +81,7 @@ src/rs3d/
 │   ├── main.py           # NiceGUI setup, layout A (left sidebar)
 │   ├── help.py           # loads (?) texts from help/en.yaml
 │   └── pages/            # status.py · live.py · data.py · guide.py · settings.py
-├── help/en.yaml          # every explanatory text (tooltip + detail panel)
+├── help/en.toml          # every label and explanatory text (tooltip + detail panel)
 ├── guide/en/             # Manual as Markdown for the Guide page
 └── cli.py                # `rs3d-app` entry point
 ```
@@ -98,7 +98,7 @@ Interfaces:
 
 - **Compact.** Screens show short labels and values only. All explanations sit behind a **(?)** icon: hover shows a 1–2 sentence tooltip; click opens a detail panel (cause, fix, commands).
 - **Layout A.** Left sidebar with the device list (`● R77A7`, `+ Find Shake…`) and pages: Status · Live · Data · Guide · ⚙ Settings.
-- **Language.** v1 is **English only**. All user-facing strings live in `help/en.yaml` and one `strings` table (no literals scattered in page code), so Vietnamese and Portuguese can be added later as `vi.yaml` / `pt.yaml` plus a Settings selector.
+- **Language.** v1 is **English only**. All user-facing strings live in `help/en.toml` (`[labels]` and `[help.<id>]`; no literals scattered in page code), so Vietnamese and Portuguese can be added later as `vi.toml` / `pt.toml` plus a Settings selector.
 - **Time.** UTC by default, with a toggle to local time. Exported files and generated code always use UTC.
 
 ### 5.2 Status
@@ -188,7 +188,8 @@ Selection ─► ObsPy SDS client ─► (response) ─► (filter) ─► expor
   - Download missing days only.
   - **Today's** file is always re-downloaded.
   - Download to a temporary file, rename when complete.
-- **The last few minutes** not yet in the Shake archive are filled from SeedLink.
+- The Shake writes its archive files in near real time (verified), so no SeedLink top-up is needed for recent minutes.
+- **Import**: any miniSEED file can be imported into the local store (`Store.import_file`, split into SDS day files). The Data page lists every station in the store plus the current Shake, so data can be explored without a Shake.
 - **Data folder** from `platformdirs`, e.g. `%LOCALAPPDATA%\rs3d` or `~/.local/share/rs3d`, containing `sds/`, `response/`, `logs/`, `config.toml` (devices, no passwords).
 
 ## 7. Error handling
@@ -217,7 +218,7 @@ The app never hangs or exits because of a connection problem. Every error become
 - **Device tests:** marked `@pytest.mark.device`, run only with a Shake connected.
 - **`codegen`:** run the generated code and compare with the exported file; results must be identical.
 - **CI:** GitHub Actions on Windows, macOS and Linux.
-- **UI:** manual checklist in `docs/`.
+- **UI:** pages are smoke-tested in-process with NiceGUI `user_simulation` and a test app that fakes device access; chart/time logic is unit-tested; a manual checklist covers the rest (Plan 3, "Pending").
 
 ## 9. Security
 
