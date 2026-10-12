@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<seedlink software="SeedLink v3.1 (2009.075)" organization="OSOP" started="2026/10/12 17:15:53.3461">
+<station name="R77A7" network="AM" description="AM station" begin_seq="000000" end_seq="0003FD" stream_check="enabled">
+<stream location="00" seedname="EHE" type="D" begin_time="2026/10/12 17:15:54.9400" end_time="2026/10/12 17:24:25.9300" begin_recno="000000" end_recno="000342" gap_check="disabled" gap_treshold="500000"/>
+<stream location="00" seedname="EHN" type="D" begin_time="2026/10/12 17:15:54.9400" end_time="2026/10/12 17:24:24.9600" begin_recno="000000" end_recno="000393" gap_check="disabled" gap_treshold="500000"/>
+<stream location="00" seedname="EHZ" type="D" begin_time="2026/10/12 17:15:54.9400" end_time="2026/10/12 17:24:23.9600" begin_recno="000000" end_recno="000286" gap_check="disabled" gap_treshold="500000"/>
+</station>
+</seedlink>
