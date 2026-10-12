@@ -63,10 +63,12 @@ Laptop (Win/macOS/Linux) ── rs3d-app ── browser / native window
 src/rs3d/
 ├── core/                 # no UI dependency, testable on its own
 │   ├── models.py         # Device, Check, Selection dataclasses
+│   ├── paths.py          # per-OS data folder (platformdirs, $RS3D_DATA_DIR override)
 │   ├── devices.py        # device config read/write (config.toml) + keyring
 │   ├── discovery.py      # rs*.local names + neighbour table + manual IP; confirm via SeedLink station code
 │   ├── netcheck.py       # laptop link-local IP check; [Set IP] command per OS
 │   ├── shell.py          # SSH session wrapper (paramiko): run read-only commands, SFTP
+│   ├── seedlink.py       # SeedLink probe (INFO STREAMS) and streaming source
 │   ├── status.py         # read-only checks → list[Check]
 │   ├── live.py           # SeedLink stream → 10-minute ring buffer per channel, auto-reconnect
 │   ├── store.py          # local SDS store: day-file paths, list days, load a Selection
@@ -110,6 +112,8 @@ One row per check: icon, label, value, (?), optional action button. Auto-refresh
 | Channels | EHZ/EHN/EHE · 100 Hz | warning if a channel is missing |
 | SSH | login works | error: wrong password / unreachable / SSH disabled |
 | Clock | offset ≤ 100 ms with a sync source (`ntpq -p`) | warning > 100 ms; error > 1 s or no source |
+| Internet | the Shake reaches the Internet over Wi-Fi | warning when not (no time sync without the laptop) |
+| Wi-Fi | one IPv4 address on `wlan0` (or Wi-Fi unused) | warning when `wlan0` has two addresses (duplicate DHCP clients, see Manual) |
 | Storage | ≥ 10 % free | warning < 10 % |
 | Archive | date range available on the Shake | warning if no archive found |
 | Data Forwarding | OFF | warning when ON |
@@ -117,7 +121,9 @@ One row per check: icon, label, value, (?), optional action button. Auto-refresh
 
 Dependent checks show `skipped` instead of repeating an error:
 - Laptop IP error → all other checks skipped.
-- SSH error → Clock, Storage, Archive, Data Forwarding and Password skipped; SeedLink and Channels still run.
+- SSH error → Clock, Internet, Wi-Fi, Storage, Archive, Data Forwarding and Password skipped; SeedLink and Channels still run.
+
+All SSH-based checks come from one SSH command (a script printing `@@section` blocks), so a refresh costs one round trip.
 
 ### 5.3 Live
 
@@ -166,8 +172,8 @@ The Manual as Markdown (English), bundled with the app and readable offline. Det
 | OS | Action | Prompt |
 |---|---|---|
 | Linux (NetworkManager) | `nmcli connection modify <conn> ipv4.link-local enabled` then `nmcli connection up <conn>` | polkit |
-| Windows | Usually nothing to do (Windows self-assigns link-local). Otherwise `netsh interface ipv4 add address` | UAC |
-| macOS | Usually nothing to do (macOS self-assigns link-local). Otherwise `networksetup` | macOS admin dialog |
+| Windows | Usually nothing to do. Otherwise switch the interface to DHCP (`netsh interface ipv4 set address name=<if> source=dhcp`): without a DHCP server Windows self-assigns 169.254.x.x | UAC |
+| macOS | Usually nothing to do. Otherwise `networksetup -setdhcp <service>`: same self-assignment | macOS admin dialog |
 
 ## 6. Data flow
 
