@@ -12,6 +12,7 @@ from rs3d.core.coverage import Segment, State
 
 COLORS = {State.LOCAL: "#2e9e4f", State.REMOTE: "#9e9e9e", State.GAP: "#d23c3c"}
 SELECTION = "rgba(47,111,222,0.25)"
+EVENT_FILL = "rgba(211,47,47,0.18)"
 
 
 def _ms(t: UTCDateTime | float) -> float:
@@ -47,6 +48,13 @@ def set_live_data(options: dict, snapshots: dict[str, tuple[np.ndarray, np.ndarr
         s["data"] = _points(t, v)
         options["xAxis"][i]["min"] = window[0] * 1000.0
         options["xAxis"][i]["max"] = window[1] * 1000.0
+
+
+def set_event_areas(options: dict, spans: list[tuple[float, float]]) -> None:
+    """Shade each (start, end) in epoch seconds on every series of a time-axis waveform chart."""
+    data = [[{"xAxis": a * 1000.0}, {"xAxis": b * 1000.0}] for a, b in spans]
+    for s in options["series"]:
+        s["markArea"] = {"silent": True, "itemStyle": {"color": EVENT_FILL}, "data": data}
 
 
 def set_stream_data(options: dict, st: Stream, max_points: int = 4000) -> None:
@@ -213,6 +221,27 @@ def helicorder_options(rows: list, scale: float, row_minutes: int = 30, click_ev
                       "nameGap": 24, "interval": 5, "axisLine": {"onZero": False}},
             "yAxis": [y_axis(utc_labels, "left"), y_axis(local_labels, "right")],
             "series": series}
+
+
+def helicorder_event_areas(rows: list, spans: list[tuple[float, float]], row_minutes: int = 30) -> list:
+    """markArea pairs in the helicorder's own coordinates (x = minutes in the row, y = row index ± 0.5)."""
+    out: list = []
+    for i, row in enumerate(rows):
+        r0 = row.start.timestamp
+        r1 = r0 + row_minutes * 60
+        for a, b in spans:
+            if b < r0 or a >= r1:
+                continue
+            out.append([{"xAxis": round((max(a, r0) - r0) / 60.0, 4), "yAxis": i - 0.5},
+                        {"xAxis": round((min(b, r1) - r0) / 60.0, 4), "yAxis": i + 0.5}])
+    return out
+
+
+def set_helicorder_events(options: dict, rows: list, spans: list[tuple[float, float]],
+                          row_minutes: int = 30) -> None:
+    """Mark events on a helicorder chart; the shading goes on the invisible "click" series (the last one)."""
+    options["series"][-1]["markArea"] = {"silent": True, "itemStyle": {"color": EVENT_FILL},
+                                         "data": helicorder_event_areas(rows, spans, row_minutes)}
 
 
 def spectrum_options(freqs: np.ndarray, amplitude: np.ndarray) -> dict:

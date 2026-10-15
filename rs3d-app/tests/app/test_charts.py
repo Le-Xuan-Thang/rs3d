@@ -1,7 +1,8 @@
 import numpy as np
 from obspy import UTCDateTime
 
-from rs3d.app.charts import COLORS, coverage_options, set_live_data, set_selection, set_stream_data, waveform_options
+from rs3d.app.charts import (COLORS, coverage_options, helicorder_event_areas, helicorder_options, set_event_areas,
+                             set_helicorder_events, set_live_data, set_selection, set_stream_data, waveform_options)
 from rs3d.core.coverage import Segment, State
 
 def test_waveform_options_one_panel_per_channel():
@@ -120,3 +121,56 @@ def test_spectrum_options_is_log_log_and_drops_zeros():
     opt = spectrum_options(np.array([1.0, 2.0, 3.0]), np.array([10.0, 0.0, 5.0]))
     assert opt["xAxis"]["type"] == "log" and opt["yAxis"]["type"] == "log"
     assert opt["series"][0]["data"] == [[1.0, 10.0], [3.0, 5.0]]
+
+
+class _Row:
+    def __init__(self, start):
+        self.start = UTCDateTime(start)
+        self.seconds = np.arange(0, 1800, 1.0)
+        self.values = np.zeros(1800)
+
+
+def test_set_event_areas_marks_every_series():
+    opts = waveform_options(("EHZ", "EHN", "EHE"))
+    set_event_areas(opts, [(100.0, 112.0)])
+    for s in opts["series"]:
+        area = s["markArea"]["data"]
+        assert area == [[{"xAxis": 100000.0}, {"xAxis": 112000.0}]]
+        assert s["markArea"]["silent"] is True
+
+
+def test_set_event_areas_with_no_events_clears():
+    opts = waveform_options(("EHZ",))
+    set_event_areas(opts, [(1.0, 2.0)])
+    set_event_areas(opts, [])
+    assert opts["series"][0]["markArea"]["data"] == []
+
+
+def test_helicorder_event_areas_inside_one_row():
+    rows = [_Row("2026-10-12T00:00:00"), _Row("2026-10-12T00:30:00")]
+    t0 = UTCDateTime("2026-10-12T00:35:00").timestamp
+    areas = helicorder_event_areas(rows, [(t0, t0 + 60)])
+    assert areas == [[{"xAxis": 5.0, "yAxis": 0.5}, {"xAxis": 6.0, "yAxis": 1.5}]]
+
+
+def test_helicorder_event_areas_split_across_rows():
+    rows = [_Row("2026-10-12T00:00:00"), _Row("2026-10-12T00:30:00")]
+    t0 = UTCDateTime("2026-10-12T00:29:00").timestamp
+    areas = helicorder_event_areas(rows, [(t0, t0 + 120)])
+    assert areas == [[{"xAxis": 29.0, "yAxis": -0.5}, {"xAxis": 30.0, "yAxis": 0.5}],
+                     [{"xAxis": 0.0, "yAxis": 0.5}, {"xAxis": 1.0, "yAxis": 1.5}]]
+
+
+def test_helicorder_event_outside_day_is_ignored():
+    rows = [_Row("2026-10-12T00:00:00")]
+    t0 = UTCDateTime("2026-10-13T00:00:00").timestamp
+    assert helicorder_event_areas(rows, [(t0, t0 + 10)]) == []
+
+
+def test_set_helicorder_events_writes_to_click_series():
+    rows = [_Row("2026-10-12T00:00:00")]
+    opts = helicorder_options(rows, 1.0)
+    t0 = rows[0].start.timestamp + 60
+    set_helicorder_events(opts, rows, [(t0, t0 + 30)])
+    assert opts["series"][-1]["name"] == "click"
+    assert opts["series"][-1]["markArea"]["data"] == [[{"xAxis": 1.0, "yAxis": -0.5}, {"xAxis": 1.5, "yAxis": 0.5}]]
