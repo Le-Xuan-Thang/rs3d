@@ -41,6 +41,10 @@ class AppPaths:
     def known_hosts(self) -> Path:
         return self.root / "known_hosts"
 
+    @property
+    def events(self) -> Path:
+        return self.root / "events.jsonl"
+
     def ensure(self) -> "AppPaths":
         for d in (self.root, self.sds, self.response, self.logs):
             d.mkdir(parents=True, exist_ok=True)
