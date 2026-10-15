@@ -30,3 +30,11 @@ def spectrogram(tr: Trace, window_s: float, overlap: float = 0.5) -> tuple[np.nd
         if bad[i * step:i * step + nperseg].any():
             db[:, i] = np.nan
     return t + tr.stats.starttime.timestamp, freqs, db
+
+
+def psd_summary(freqs: np.ndarray, power_db: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """(freqs, p10, median, p90) over time, per frequency. Gap columns are ignored; the 0 Hz bin is dropped."""
+    keep = ~np.isnan(power_db).all(axis=0)
+    p = power_db[1:, keep]
+    lo, med, hi = np.percentile(p, [10, 50, 90], axis=1) if p.shape[1] else (np.full(len(freqs) - 1, np.nan),) * 3
+    return freqs[1:], lo, med, hi

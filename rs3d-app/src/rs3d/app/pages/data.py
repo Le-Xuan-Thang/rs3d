@@ -10,7 +10,7 @@ from nicegui import run, ui
 from obspy import UTCDateTime
 
 from rs3d.app import timeutil
-from rs3d.app.charts import (coverage_options, set_selection, set_stream_data, spectrogram_options,
+from rs3d.app.charts import (coverage_options, psd_options, set_selection, set_stream_data, spectrogram_options,
                              waveform_options)
 from rs3d.app.state import CHANNELS, AppState
 from rs3d.app.strings import label
@@ -21,7 +21,7 @@ from rs3d.core.coverage import State, coverage
 from rs3d.core.export import load_processed, write_csv, write_mseed, write_plot
 from rs3d.core.models import Device, Selection
 from rs3d.core.response import cache_path, cached_inventory, get_inventory
-from rs3d.core.spectro import spectrogram, window_for
+from rs3d.core.spectro import psd_summary, spectrogram, window_for
 
 ZOOMS = ("week", "day", "hour")
 MAX_IMPORT_BYTES = 2_000_000_000
@@ -172,6 +172,8 @@ def register(state: AppState) -> None:
             ui.label(label("data.spectrogram")).classes("font-bold")
             spec_channel = ui.select(list(channels), value=channels[0]).props("dense").classes("w-24")
         spec_chart = ui.echart({"series": []}).classes("w-full").style("height: 36vh")
+        ui.label(label("data.psd")).classes("font-bold")
+        psd_chart = ui.echart({"series": []}).classes("w-full").style("height: 28vh")
 
         # ------------------------------------------------------------ helpers
         def selection() -> Selection:
@@ -252,6 +254,9 @@ def register(state: AppState) -> None:
                 spec_chart.options.clear()
                 spec_chart.options.update({"series": []})
                 spec_chart.update()
+                psd_chart.options.clear()
+                psd_chart.options.update({"series": []})
+                psd_chart.update()
                 return
             traces.merge(method=0)  # one masked trace; gaps become masked samples
             tr = traces[0]
@@ -259,6 +264,9 @@ def register(state: AppState) -> None:
             spec_chart.options.clear()
             spec_chart.options.update(spectrogram_options(times, freqs, power, use_utc=not tz.value))
             spec_chart.update()
+            psd_chart.options.clear()
+            psd_chart.options.update(psd_options(*psd_summary(freqs, power)))
+            psd_chart.update()
 
         spec_channel.on_value_change(lambda _: draw_spectrogram())
 

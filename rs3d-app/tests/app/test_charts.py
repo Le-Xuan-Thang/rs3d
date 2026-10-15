@@ -67,3 +67,12 @@ def test_spectrogram_options_labels_follow_timezone():
     power = np.zeros((2, 2))
     utc = spectrogram_options(times, freqs, power, use_utc=True)["xAxis"]["data"][0]
     assert utc.startswith("1970-01-01 00:00")
+
+
+def test_psd_options_log_axis_with_band():
+    from rs3d.app.charts import psd_options
+    f = np.array([0.1, 1.0, 10.0])
+    opt = psd_options(f, np.array([-90.0, -80, -70]), np.array([-85.0, -75, -65]), np.array([-80.0, -70, -60]))
+    assert opt["xAxis"]["type"] == "log"
+    assert [s["name"] for s in opt["series"]] == ["10%", "median", "90%"]
+    assert opt["series"][1]["data"][0] == [0.1, -85.0]

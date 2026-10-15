@@ -38,3 +38,16 @@ def test_masked_gap_gives_nan_columns():
 def test_window_grows_with_duration():
     assert window_for(3600) < window_for(86400)
     assert window_for(60) >= 1.0
+
+
+def test_psd_summary_peaks_at_sine_and_ignores_gap_columns():
+    from rs3d.core.spectro import psd_summary
+    data = np.sin(2 * np.pi * 5 * np.arange(0, 60, 0.01))
+    mask = np.zeros(len(data), bool)
+    mask[2000:4000] = True
+    _, freqs, power = spectrogram(_trace(np.ma.masked_array(data, mask=mask)), window_s=4.0)
+    f, lo, med, hi = psd_summary(freqs, power)
+    assert abs(f[np.argmax(med)] - 5.0) <= 0.5
+    assert not np.isnan(med).any()
+    assert (lo <= med).all() and (med <= hi).all()
+    assert f[0] > 0  # DC bin dropped (log axis)

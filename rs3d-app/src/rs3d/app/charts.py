@@ -144,3 +144,20 @@ def spectrogram_options(times: np.ndarray, freqs: np.ndarray, power_db: np.ndarr
         "tooltip": {"position": "top"},
         "series": [{"type": "heatmap", "data": cells, "progressive": 0}],
     }
+
+
+def psd_options(freqs: np.ndarray, lo: np.ndarray, med: np.ndarray, hi: np.ndarray) -> dict:
+    """Power spectral density summary: median with 10%/90% lines, log frequency axis."""
+    def line(name: str, values: np.ndarray, **style) -> dict:
+        data = [[float(f), None if np.isnan(v) else round(float(v), 2)] for f, v in zip(freqs, values)]
+        return {"type": "line", "name": name, "showSymbol": False, "data": data, "lineStyle": style}
+    return {
+        "animation": False,
+        "grid": {"left": 70, "right": 90, "top": 24, "bottom": 40},
+        "legend": {"top": 0},
+        "xAxis": {"type": "log", "name": "Hz", "nameLocation": "middle", "nameGap": 26},
+        "yAxis": {"type": "value", "scale": True, "name": "dB", "nameLocation": "middle", "nameGap": 48},
+        "tooltip": {"trigger": "axis"},
+        "series": [line("10%", lo, width=1, type="dashed"), line("median", med, width=2),
+                   line("90%", hi, width=1, type="dashed")],
+    }
