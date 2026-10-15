@@ -67,3 +67,23 @@ def test_amplitude_spectrum_of_tiny_trace_is_empty():
     from rs3d.core.spectro import amplitude_spectrum
     f, a = amplitude_spectrum(_trace(np.ones(5)))
     assert len(f) == 0 and len(a) == 0
+
+
+def _gapped(dtype):
+    data = 1000 * np.sin(2 * np.pi * 5 * np.arange(0, 60, 0.01))
+    mask = np.zeros(len(data), bool)
+    mask[2000:4000] = True  # 20 s hole
+    values = data.astype(dtype)
+    if dtype == "float64":
+        values[mask] = np.nan  # what a filter leaves under a masked gap
+    return np.ma.masked_array(values, mask=mask)
+
+
+def test_amplitude_spectrum_ignores_gaps_in_integer_and_float_data():
+    from rs3d.core.spectro import amplitude_spectrum
+    for dtype in ("int32", "float64"):
+        freqs, amp = amplitude_spectrum(_trace(_gapped(dtype)))
+        assert not np.isnan(amp).any(), dtype
+        i = np.argmax(amp)
+        assert abs(freqs[i] - 5.0) < 0.1, dtype
+        assert abs(amp[i] - 1000) / 1000 < 0.1, dtype

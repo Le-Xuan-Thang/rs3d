@@ -69,6 +69,9 @@ def build_rows(st: Stream, day_start: UTCDateTime, row_minutes: int = ROW_MINUTE
             rows.append(Row(a, np.array([]), np.array([])))
             continue
         t, v = np.concatenate(t_parts), np.concatenate(v_parts)
+        finite = v[np.isfinite(v)]
+        if finite.size:  # raw counts sit on a DC offset: show the signal, not the offset
+            v = v - np.median(finite)
         if len(t) > points:
             t, v = minmax_decimate(t, v, points)
         rows.append(Row(a, t, v))

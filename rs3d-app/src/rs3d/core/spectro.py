@@ -41,12 +41,16 @@ def psd_summary(freqs: np.ndarray, power_db: np.ndarray) -> tuple[np.ndarray, np
 
 
 def amplitude_spectrum(tr: Trace) -> tuple[np.ndarray, np.ndarray]:
-    """(freqs, amplitude) of one window. Hann-tapered, DC bin dropped; a sine of amplitude A reads about A."""
-    data = np.ma.getdata(tr.data).astype(float)
-    if len(data) < 8:
+    """(freqs, amplitude) of one window. Hann-tapered, DC bin dropped; a sine of amplitude A reads about A.
+
+    Masked or non-finite samples (gaps) are treated as silence and left out of the amplitude scaling.
+    """
+    raw = np.ma.getdata(tr.data).astype(float)
+    good = ~(np.ma.getmaskarray(tr.data) | ~np.isfinite(raw))
+    if good.sum() < 8:
         return np.array([]), np.array([])
-    data = data - data.mean()
+    data = np.where(good, raw - raw[good].mean(), 0.0)
     window = np.hanning(len(data))
-    amplitude = np.abs(np.fft.rfft(data * window)) * 2.0 / window.sum()
+    amplitude = np.abs(np.fft.rfft(data * window)) * 2.0 / window[good].sum()
     freqs = np.fft.rfftfreq(len(data), d=tr.stats.delta)
     return freqs[1:], amplitude[1:]

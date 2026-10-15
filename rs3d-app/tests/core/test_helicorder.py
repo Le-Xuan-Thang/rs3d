@@ -109,3 +109,11 @@ def test_window_with_band_pass_survives_tiny_fragments(store):
 def test_metres_per_second_without_response_raises_clearly(store):
     with pytest.raises(ValueError, match="response"):
         load_window(store, "AM", "R77A7", "00", "EHZ", DAY + 10, DAY + 100, units="m/s")
+
+
+def test_dc_offset_is_removed_per_row_so_default_counts_are_readable():
+    # raw Shake counts sit on a large DC offset; the view must show the signal, not the offset
+    noise = 15000 + np.random.default_rng(3).normal(0, 300, 180000)
+    row0 = build_rows(Stream([trace(0, noise)]), DAY)[0]
+    assert abs(np.median(row0.values)) < 50
+    assert scale_for([row0]) < 3000  # about 2 x the noise, not 2 x the offset
