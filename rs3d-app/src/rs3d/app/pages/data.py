@@ -229,11 +229,16 @@ def register(state: AppState) -> None:
                 return
             days = scan_dates(s.start, s.end, state.store.days(net, sta, loc, cfg.channel))
             status["text"] = label("events.scanning")
-            total = 0
-            for day in days:
-                total += await run.io_bound(scan_day, state.store, state.events, cfg, net, sta, loc, day)
-            status["text"] = label("events.found").format(n=total)
-            mark_events(s)
+            total, counted = 0, False
+            try:
+                for day in days:
+                    total += await run.io_bound(scan_day, state.store, state.events, cfg, net, sta, loc, day)
+                status["text"] = label("events.found").format(n=total)
+                counted = True
+            finally:
+                if not counted:
+                    status["text"] = ""  # a failed scan must not leave "Scanning..." on screen
+                mark_events(s)
 
         async def on_rescan() -> None:
             rescan.disable()

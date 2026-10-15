@@ -74,3 +74,25 @@ def test_event_from_previous_day_is_not_stored_for_this_day(tmp_path):
     put(store, MIDNIGHT, 100, seed=3)
     scan_day(store, log, EventSettings(), "AM", "R77A7", "00", DAY)
     assert all(e.start >= MIDNIGHT.timestamp for e in log.latest(10))
+
+
+def test_burst_across_a_chunk_boundary_gives_one_event(tmp_path):
+    from rs3d.core.events import detect
+    from rs3d.core.models import Selection
+    store, log = Store(tmp_path / "sds"), EventStore(tmp_path / "events.jsonl")
+    put(store, MIDNIGHT, 7200, burst=(3580, 3620))                  # straddles the 3600 s boundary
+    n = scan_day(store, log, EventSettings(), "AM", "R77A7", "00", DAY)
+    whole = detect(store.load(Selection("AM", "R77A7", "00", MIDNIGHT, MIDNIGHT + 86400, channels=("EHZ",))),
+                   EventSettings())
+    assert n == 1 and len(whole) == 1
+    assert log.latest(5)[0].start == whole[0].start
+
+
+def test_chunks_are_at_most_an_hour_and_contiguous():
+    from rs3d.core.events_scan import chunked
+    tr = Trace(np.arange(int(2.5 * 3600 * 10), dtype="float64"),
+               header={"sampling_rate": 10.0, "starttime": MIDNIGHT, "channel": "EHZ"})
+    parts = list(chunked(tr, 3600))
+    assert [len(p.data) for p in parts] == [36000, 36000, 18000]
+    assert parts[1].stats.starttime == MIDNIGHT + 3600
+    assert np.concatenate([p.data for p in parts]).tolist() == tr.data.tolist()
