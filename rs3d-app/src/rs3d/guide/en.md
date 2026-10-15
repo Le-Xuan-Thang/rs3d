@@ -69,6 +69,16 @@ ntpq -pn
 
 A line starting with `*` is the selected source; `offset` is in milliseconds.
 
+### When the clock is wrong
+
+The Shake has no battery clock, so after a power cut it restarts with an old time until its time service (ntpd) reaches a source. Each time you open **Status**, RS3D also compares the Shake's time with this laptop's time. If the Shake is off and has no time source, the Clock row turns yellow or red and shows a **Sync clock** button.
+
+1. Press **Sync clock**. The dialog shows how far the Shake is behind or ahead of the laptop.
+2. Press **Sync now**. RS3D restarts the Shake's time service, which sets the clock from the laptop or from the Internet (Wi-Fi). It waits up to 30 seconds.
+3. If that does not work, **Set from laptop** appears. It copies this laptop's UTC time to the Shake. Use it only when this laptop's clock is right.
+
+Changing the time can leave a small gap or overlap in the data. Data recorded while the clock was wrong keeps its wrong timestamps. If the Shake has a time source and only this laptop disagrees, RS3D shows a warning and no button: check the laptop's clock instead. Every attempt is written to `logs/clock-sync.log` in the data folder.
+
 ## Wi-Fi: two addresses
 
 If `ip -4 addr show wlan0` on the Shake lists two addresses, Internet comes and goes. Two DHCP clients manage `wlan0`. Fix on the Shake:

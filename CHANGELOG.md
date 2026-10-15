@@ -18,6 +18,8 @@ line under **Unreleased** in the same commit or pull request that makes it.
 - Helicorder: events are shaded on their rows.
 - Status page: a warning when the event log cannot be written.
 - Guide section "Events" and (?) help texts for every event setting.
+- Status → Clock now compares the Shake's time with the laptop's, and says which one looks wrong.
+- **Sync clock** button on the Status page: **Sync now** restarts the Shake's time service (laptop or Wi-Fi time source); **Set from laptop** copies the laptop's UTC time to the Shake. Every attempt is logged in `logs/clock-sync.log`.
 
 ### Changed
 - Documentation: `docs/Manual.odt` regenerated; `data/` (downloaded miniSEED files) is now ignored by git.
