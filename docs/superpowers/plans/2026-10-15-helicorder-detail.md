@@ -1385,3 +1385,22 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 **Placeholder scan:** none ("TBD", "similar to", "handle edge cases" absent); every code step has code. One implementer note (the `evaluate_all` composition in Task 8) gives an explicit simpler alternative.
 
 **Type consistency:** `Row(start, seconds, values)`, `build_rows(st, day_start, row_minutes, points)`, `scale_for(rows, factor)`, `click_to_time(day_start, row_minutes, row_index, x_fraction)`, `zoom_window/shift_window`, `load_day/load_window`, `DetailContext(net, sta, loc, channel, units, band, use_utc)`, `detail_chart_options(mode, st, channel, use_utc)` are used with the same names and argument order in every task. `inventory_for` moves from the page (Task 5) to `detail.py` (Task 6) and the page imports it from there.
+
+## Final review notes (2026-10-15)
+
+The whole-branch review found no Critical issues. Five Important findings were fixed with tests (DC offset in the
+default counts view, spectra around gaps, stale detail context and clipboard title, out-of-order loads, failed
+zoom/save handling). Later fixes: Fit now rescales the amplitude and keeps the zoomed width, and removing a box-zoom
+amplitude range now works (the chart merges option updates, so `min`/`max` are sent explicitly as `null`).
+
+Deferred minors (not fixed):
+- The empty-day message has no link to the Data page.
+- Helicorder units, band-pass and filter are read from the saved prefs but not written back.
+- Right-axis local-time labels only appear at minute 0, so time zones like +5:45 get none.
+- Clipboard PNG temp folders are never cleaned up.
+- The spec still says `helicorder_options(rows, scale, use_utc)`; the labels are now left UTC, right local.
+- Offline m/s retries the network on every detail reload (the failure is not cached).
+- The camera button stays enabled on an empty clipboard (saving now reports an error instead of raising).
+
+Out of scope by design: live helicorder tail, a multi-item clipboard, downloading remote days from this page, and
+box zoom in the Spectra and Spectrogram modes.
