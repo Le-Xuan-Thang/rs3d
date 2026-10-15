@@ -38,3 +38,15 @@ def psd_summary(freqs: np.ndarray, power_db: np.ndarray) -> tuple[np.ndarray, np
     p = power_db[1:, keep]
     lo, med, hi = np.percentile(p, [10, 50, 90], axis=1) if p.shape[1] else (np.full(len(freqs) - 1, np.nan),) * 3
     return freqs[1:], lo, med, hi
+
+
+def amplitude_spectrum(tr: Trace) -> tuple[np.ndarray, np.ndarray]:
+    """(freqs, amplitude) of one window. Hann-tapered, DC bin dropped; a sine of amplitude A reads about A."""
+    data = np.ma.getdata(tr.data).astype(float)
+    if len(data) < 8:
+        return np.array([]), np.array([])
+    data = data - data.mean()
+    window = np.hanning(len(data))
+    amplitude = np.abs(np.fft.rfft(data * window)) * 2.0 / window.sum()
+    freqs = np.fft.rfftfreq(len(data), d=tr.stats.delta)
+    return freqs[1:], amplitude[1:]

@@ -51,3 +51,19 @@ def test_psd_summary_peaks_at_sine_and_ignores_gap_columns():
     assert not np.isnan(med).any()
     assert (lo <= med).all() and (med <= hi).all()
     assert f[0] > 0  # DC bin dropped (log axis)
+
+
+def test_amplitude_spectrum_peak_and_scale():
+    from rs3d.core.spectro import amplitude_spectrum
+    t = np.arange(0, 120, 0.01)
+    freqs, amp = amplitude_spectrum(_trace(1000 * np.sin(2 * np.pi * 5 * t)))
+    i = np.argmax(amp)
+    assert abs(freqs[i] - 5.0) < 0.05
+    assert abs(amp[i] - 1000) / 1000 < 0.05
+    assert freqs[0] > 0
+
+
+def test_amplitude_spectrum_of_tiny_trace_is_empty():
+    from rs3d.core.spectro import amplitude_spectrum
+    f, a = amplitude_spectrum(_trace(np.ones(5)))
+    assert len(f) == 0 and len(a) == 0
