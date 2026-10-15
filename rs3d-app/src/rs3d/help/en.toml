@@ -130,12 +130,38 @@ data_dir = "Data folder"
 saved = "Saved"
 ok = "Connection OK"
 new = "New device"
+events = "Events"
 
 [labels.setip]
 title = "Give this laptop a 169.254.x.x address"
 interface = "Wired interface"
 commands = "Commands that will run"
 done = "Done. Checking again…"
+
+[labels.events]
+enabled = "Detect events"
+channel = "Channel"
+sta = "STA (s)"
+lta = "LTA (s)"
+on = "On (ratio)"
+reset = "Reset (ratio)"
+highpass = "High-pass (Hz)"
+lowpass = "Low-pass (Hz)"
+apply = "Apply"
+defaults = "Reset to defaults"
+soon = "Sound / desktop notification / email: coming soon"
+missing_channel = "No data from {channel} yet. Detection is idle."
+applied = "Applied. The detector starts again (it needs the LTA time to settle)."
+error_empty = "Fill in every number."
+active = "Event in progress, started {start}, ratio {ratio}"
+ended = "Event ended, duration {duration} s, peak ratio {ratio}, {amplitude} counts"
+dismiss = "Dismiss"
+latest = "Latest events"
+none = "No events yet."
+rescan = "Rescan"
+scanning = "scanning events…"
+found = "{n} events"
+log_error = "Cannot write the event log ({error}). Events are shown but not saved."
 
 # ---------------------------------------------------------------- (?) texts
 
@@ -302,3 +328,39 @@ detail = "It reads from this laptop's data folder, so it runs without the Shake.
 [help.live_filter]
 short = "Band-pass 1–10 Hz to hide slow drift and high-frequency noise."
 detail = "Applied only to the display. Use the Data page to export filtered data."
+
+[help.events]
+short = "Raises an alert when the ground shakes much harder than usual."
+detail = """
+RS3D compares the **short-term average** (STA) of the vertical signal with its **long-term average** (LTA).
+When STA / LTA rises above **On**, an event starts; it ends when the ratio falls below **Reset**.
+
+The same detector runs on the live stream and on every downloaded day, so events show up on the Live page,
+the Data page and the helicorder. Changes apply to the live detector at once; old data is not re-scanned
+(use **Rescan** on the Data page).
+
+The detector stays quiet for the first LTA seconds after start-up or after a gap in the data.
+"""
+
+[help.events.sta]
+short = "Length of the short window in seconds."
+detail = "A short window reacts quickly. **6 s** is the value used in rsudp here. Must be shorter than LTA."
+
+[help.events.lta]
+short = "Length of the long window in seconds."
+detail = "The long window is the background level. **30 s** here. Must be longer than STA."
+
+[help.events.on]
+short = "STA / LTA above this value starts an event."
+detail = "Higher means fewer, stronger events. **3.95** here (stock rsudp uses 1.6). Must be higher than Reset."
+
+[help.events.reset]
+short = "STA / LTA below this value ends the event."
+detail = "**0.9** here. Must be lower than On and above 0."
+
+[help.events.band]
+short = "Only frequencies between high-pass and low-pass are analysed."
+detail = """
+Traffic and wind are strongest outside the band where most earthquakes show up. **0.8 to 9 Hz** here.
+High-pass must be above 0 and below low-pass; low-pass must be below the Nyquist frequency (50 Hz for a 100 Hz Shake).
+"""

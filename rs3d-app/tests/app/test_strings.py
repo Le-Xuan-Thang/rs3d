@@ -36,3 +36,18 @@ def test_every_help_id_used_by_status_exists():
 
 def test_guide_is_bundled():
     assert guide_markdown().startswith("# RS3D Guide")
+
+
+def test_every_event_help_id_has_short_and_detail():
+    for hid in ("events", "events.sta", "events.lta", "events.on", "events.reset", "events.band"):
+        short, detail = help_text(hid)
+        assert short and detail, hid
+
+
+def test_event_labels_exist():
+    for key in ("settings.events", "events.enabled", "events.channel", "events.sta", "events.lta", "events.on",
+                "events.reset", "events.highpass", "events.lowpass", "events.apply", "events.defaults",
+                "events.soon", "events.missing_channel", "events.applied", "events.error_empty",
+                "events.active", "events.ended", "events.dismiss", "events.latest", "events.none",
+                "events.rescan", "events.scanning", "events.found", "events.log_error"):
+        assert label(key) != key, key
