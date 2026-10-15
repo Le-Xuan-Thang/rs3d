@@ -88,3 +88,12 @@ def test_scan_dates_end_exactly_at_midnight_excludes_next_day():
     have = {date(2026, 10, 12), date(2026, 10, 13)}
     got = scan_dates(UTCDateTime("2026-10-12T00:00:00"), UTCDateTime("2026-10-13T00:00:00"), have)
     assert got == [date(2026, 10, 12)]
+
+
+from rs3d.app.pages.helicorder import day_spans
+
+
+def test_day_spans_filters_by_channel():
+    events = [Event(1.0, 2.0, 5.0, 1.0, "EHZ", "live"), Event(3.0, 4.0, 5.0, 1.0, "EHN", "scan")]
+    assert day_spans(events, "EHZ") == [(1.0, 2.0)]
+    assert day_spans(events, "EHE") == []

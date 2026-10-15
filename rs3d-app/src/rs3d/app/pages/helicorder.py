@@ -8,7 +8,7 @@ from urllib.parse import urlencode
 from nicegui import run, ui
 from obspy import UTCDateTime
 
-from rs3d.app.charts import helicorder_height_px, helicorder_options
+from rs3d.app.charts import helicorder_height_px, helicorder_options, set_helicorder_events
 from rs3d.app.detail import DetailContext, DetailPanel, inventory_for
 from rs3d.app.latest import LatestOnly
 from rs3d.app.pages.data import station_choices
@@ -25,6 +25,11 @@ def parse_day(text: str | None, fallback: date) -> date:
         return date.fromisoformat(text) if text else fallback
     except ValueError:
         return fallback
+
+
+def day_spans(events, channel: str) -> list[tuple[float, float]]:
+    """(start, end) of the events detected on this channel."""
+    return [(e.start, e.end) for e in events if e.channel == channel]
 
 
 def register(state: AppState) -> None:
@@ -116,6 +121,9 @@ def register(state: AppState) -> None:
             message.text = ""
             chart.options.clear()
             chart.options.update(helicorder_options(rows, scale_for(rows, float(scale.value))))
+            t0 = start_of(wanted).timestamp
+            set_helicorder_events(chart.options, rows,
+                                  day_spans(state.events.events_between(t0, t0 + 86400), channel_now))
             chart.style(f"height: {helicorder_height_px(len(rows))}px")
             chart.update()
 
