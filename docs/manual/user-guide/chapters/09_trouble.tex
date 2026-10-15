@@ -1,0 +1,62 @@
+\chapter{Troubleshooting}\label{ch:trouble}
+
+Start with the \ui{Status} page: its red and yellow rows already say what is wrong, and the \raisebox{-1pt}{\textbf{(?)}} icon next to a
+row explains the fix. The tables below collect the most common situations by where you meet them.
+
+\Needspace{9\baselineskip}
+\section{Connecting}
+\begin{longtable}{@{}L{0.27\linewidth}L{0.30\linewidth}L{0.35\linewidth}@{}}
+\toprule
+What you see & Likely cause & What to do\\ \midrule\endhead
+\ui{Find Shake\ldots} finds nothing & the Shake is still starting; no cable; no 169.254.x.x address on the laptop & wait three to five minutes; check the cable; open \ui{Status} and use \ui{Set IP}; then try again, or add the Shake by hand with its address\\
+\ui{Laptop IP} red & the wired port has no link-local address & press \ui{Set IP} (Chapter~\ref{ch:status}); check the cable and that the Shake has power\\
+\ui{SeedLink} red, \emph{connection refused} & the Shake is not ready, or the address is wrong & wait; check the address in \ui{Settings}; check the cable\\
+\ui{SSH} red: wrong user or password & credentials differ from the Shake's & enter the correct ones in \ui{Settings} and press \ui{Test connection}\\
+\ui{SSH} red: host key changed & the Shake's SD card was replaced or re-installed & delete its line from \file{known\_hosts} in the data folder (Section~\ref{sec:folder}) and refresh\\
+\ui{Clock} yellow or red & the Shake has no Internet or no time source & fix \ui{Internet} and \ui{Wi-Fi} first; give it a few minutes to synchronise\\
+\ui{Wi-Fi} yellow, two addresses & two network managers on the Shake & see the \ui{Guide} page, ``Wi-Fi: two addresses''\\
+\bottomrule
+\end{longtable}
+
+\Needspace{9\baselineskip}
+\section{Live}
+\begin{longtable}{@{}L{0.27\linewidth}L{0.30\linewidth}L{0.35\linewidth}@{}}
+\toprule
+What you see & Likely cause & What to do\\ \midrule\endhead
+\ui{reconnecting\ldots} with a reason & the link dropped; the page retries by itself & check the cable and the Shake's power; it resumes when the Shake is back\\
+\ui{waiting for data\ldots} & connected but no data for five seconds & wait; if it persists, restart the Shake\\
+Flat lines & the filter band is wrong, or the Shake is quiet & switch \ui{Filter} off to see the raw signal; tap the table or stamp near the Shake to test\\
+\bottomrule
+\end{longtable}
+
+\Needspace{9\baselineskip}
+\section{Data and helicorder}
+\begin{longtable}{@{}L{0.27\linewidth}L{0.30\linewidth}L{0.35\linewidth}@{}}
+\toprule
+What you see & Likely cause & What to do\\ \midrule\endhead
+\emph{No data in this range} & nothing is on the laptop for that time & check the coverage bar: grey means ``on the Shake, not yet downloaded'': press \ui{Download \& preview}; red means nothing was recorded\\
+\emph{No data yet. Connect a Shake, or import a miniSEED file.} & the data folder is empty & download from the Shake, or import a file\\
+Helicorder empty for a day & that day is not on the laptop & download it on the \ui{Data} page\\
+\emph{No data in this window} (detail view) & you clicked a row or time with no samples & click another row, or use \ui{Earlier}/\ui{Later}\\
+Error when choosing \ui{m/s} & no instrument response and no Internet & connect the laptop to the Internet once so the response can be downloaded and cached\\
+Preview is slow & a very long range, or \ui{m/s} on a whole day & select a shorter range, or use the helicorder for overviews\\
+Gaps in the data & the Shake was off, or the cable was unplugged & see \ui{Data health} for exactly when; gaps cannot be filled\\
+Spectrogram blank in places & the window touches a gap & expected: such columns are left blank on purpose\\
+\bottomrule
+\end{longtable}
+
+\Needspace{9\baselineskip}
+\section{Starting the application}
+\begin{longtable}{@{}L{0.27\linewidth}L{0.30\linewidth}L{0.35\linewidth}@{}}
+\toprule
+What you see & Likely cause & What to do\\ \midrule\endhead
+\emph{address already in use} & you passed \code{--port} and another program uses it & start without \code{--port} (a free port is chosen) or pick another number\\
+The browser does not open & started with \code{--no-browser}, or no default browser & open the address printed in the terminal by hand\\
+\emph{command not found: uv} & \code{uv} is not installed & install it from \url{https://docs.astral.sh/uv/}\\
+Page does not update after upgrading & an old browser tab is open & reload the page (\key{Ctrl}+\key{R}); restart the application\\
+\bottomrule
+\end{longtable}
+
+\section{Still stuck?}
+Look in the \file{logs/} folder of the data folder, and read the \ui{Guide} page of the application. When reporting a problem, include
+the text of any error message, the page you were on, and what the \ui{Status} page shows.

@@ -1,0 +1,58 @@
+\chapter{Installation and first run}\label{ch:install}
+
+\section{Install}
+RS3D is distributed as source code. It needs Python 3.11 or newer and \href{https://docs.astral.sh/uv/}{\code{uv}}, a tool that
+creates an isolated environment with exactly the libraries the application needs.
+
+\begin{minted}{bash}
+cd rs3d-app
+uv sync
+\end{minted}
+
+\code{uv sync} reads the project's lock file and installs the libraries (ObsPy, SciPy, NiceGUI and others) into a folder
+named \file{.venv}. It does not touch the rest of your system. It needs the Internet once, the first time.
+
+\section{Start the application}
+\begin{minted}{bash}
+uv run rs3d-app
+\end{minted}
+
+Your browser opens on the application. The first time (no Shake added yet) you land on \ui{Settings}; afterwards you land on
+\ui{Status}. To stop the application press \key{Ctrl}+\key{C} in the terminal where you started it.
+
+\begin{rs3dtip}[Choosing the port]
+Without options the application listens on port 8765, or on any free port if that one is taken, and prints the address. Use
+\code{uv run rs3d-app --port 9000} to choose one, and \code{uv run rs3d-app --no-browser} to start it without opening a window
+(for example on a second computer).
+\end{rs3dtip}
+
+\section{Where your data is kept}
+Everything the application stores lives in one folder, shown on the \ui{Settings} page next to \ui{Data folder}.
+
+\begin{center}\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+System & Default folder\\ \midrule
+Linux & \code{\textasciitilde/.local/share/rs3d}\\
+macOS & \code{\textasciitilde/Library/Application Support/rs3d}\\
+Windows & \code{C:\textbackslash Users\textbackslash <you>\textbackslash AppData\textbackslash Local\textbackslash rs3d}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+To use a different folder, for example on a larger disk, set the environment variable \code{RS3D\_DATA\_DIR} before starting:
+
+\begin{minted}{bash}
+RS3D_DATA_DIR=/mnt/seismic/rs3d uv run rs3d-app
+\end{minted}
+
+Chapter~\ref{ch:storage} explains what is inside the folder and how to back it up.
+
+\section{Updating and uninstalling}
+To update, replace the program folder with the newer one and run \code{uv sync} again; your data folder is separate and is kept. To
+remove the application, delete the program folder and, if you also want to delete your data, the data folder.
+
+\begin{rs3dwarn}[The data folder is your recordings]
+Deleting the data folder deletes every day file you downloaded. The Shake itself keeps only the most recent days
+(7 by default), so data that exist only on your laptop cannot be fetched again.
+\end{rs3dwarn}

@@ -1,0 +1,63 @@
+\chapter{Introduction}\label{ch:intro}
+
+\section{What RS3D is}
+A Raspberry Shake 3D is a small seismograph: three geophones (one vertical, two horizontal) and a digitiser in one box,
+recording 100 samples per second on each of its three channels. It records data on its own SD card and can also
+stream it live over the network. RS3D is the program on your laptop that makes use of both.
+
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}
+  \node[boxdark,minimum width=3.2cm] (shake) at (0,0) {Raspberry Shake 3D\\[-1pt]{\scriptsize EHZ \textbullet\ EHN \textbullet\ EHE}};
+  \node[boxblue,minimum width=3cm] (app) at (6.2,0) {RS3D\\[-1pt]{\scriptsize on your laptop}};
+  \node[box,minimum width=3cm] (out) at (11.4,0) {pictures, files,\\[-1pt]{\scriptsize miniSEED, CSV, PNG, PDF}};
+  \draw[flow] (shake) -- node[above,font=\scriptsize\sffamily]{Ethernet cable} (app);
+  \draw[flow] (app) -- (out);
+\end{tikzpicture}
+\caption{The Shake is connected to the laptop with a network cable; RS3D reads it live and copies its stored data.}
+\end{figure}
+
+\section{What you can do with it}
+\begin{description}[leftmargin=3cm,style=nextline]
+\item[Check the Shake] The \ui{Status} page tests the cable, the live data port, the Shake's clock and storage, and tells you in plain
+  language what is wrong and how to fix it (Chapter~\ref{ch:status}).
+\item[Watch live] The \ui{Live} page draws the three channels as the ground moves (Chapter~\ref{ch:live}).
+\item[Work with data] The \ui{Data} page downloads recorded days from the Shake, lets you inspect any time range as waveforms, a
+  spectrogram and a noise spectrum, shows how complete the data are, and exports to common formats
+  (Chapter~\ref{ch:data}). It also opens miniSEED files from any other station.
+\item[See the whole day] The \ui{Helicorder} page shows 24 hours at a glance. A click opens a zoomable detail view with spectra and
+  a spectrogram, and a one-click picture of the result (Chapter~\ref{ch:heli}).
+\end{description}
+
+\section{What you need}
+\begin{itemize}
+\item A Raspberry Shake 3D with its power supply and a network cable.
+\item A laptop or desktop computer with an Ethernet port (or an adapter). The application was developed and tested on Ubuntu
+  Linux; code paths for Windows and macOS exist, but the authors have not verified them.
+\item Python 3.11 or newer, and the \code{uv} tool that installs the application's libraries (Chapter~\ref{ch:install}).
+\item A web browser. The application's pages open in your browser; the application itself runs on your own computer, and nothing is
+  sent to the Internet unless you ask for the instrument response (Section~\ref{sec:units}).
+\end{itemize}
+
+\section{How it relates to other Raspberry Shake software}
+Raspberry Shake provides its own tools; RS3D complements them rather than replacing them.
+\begin{description}[leftmargin=3cm,style=nextline]
+\item[Raspberry Shake web page] every Shake serves a configuration page in a browser at its own address.
+\item[rsudp] a program from Raspberry Shake that receives the stream on a computer, plots it and raises
+  alerts \parencite{rsudp}.
+\item[DataView] Raspberry Shake's web application for looking at data from many stations \parencite{raspishake}.
+\end{description}
+RS3D focuses on \emph{your own Shake on your own laptop}: it works without Internet, keeps the data on your disk, and
+adds the data-quality, spectral and helicorder tools described in this guide.
+
+\section{The application at a glance}
+When you start RS3D a sidebar on the left lists your devices and the five pages. The header shows the page you are on.
+
+\begin{figure}[tbp]
+\centering
+\annotshot[0.8\linewidth]{status}{\calloutsLayout}
+\caption{The window layout. (1) Devices: the Shake or Shakes you have added, and \ui{Find Shake\ldots}. (2) The pages:
+\ui{Status}, \ui{Live}, \ui{Helicorder}, \ui{Data}, \ui{Guide}, \ui{Settings}. (3) The page itself.}
+\end{figure}
+
+Hover the mouse over any \raisebox{-1pt}{\textcolor{rs3dgrey}{\textbf{(?)}}} icon for a one-line explanation, and click it for the full text.

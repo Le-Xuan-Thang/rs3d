@@ -1,0 +1,62 @@
+\chapter{Quick reference}\label{app:ref}
+
+\section{Pages}
+\begin{center}\small
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+Page & Purpose\\ \midrule
+\ui{Status} & eleven read-only checks of the link and of the Shake; \ui{Set IP}; refreshes every 30~s\\
+\ui{Live} & live traces; window 30~s--10~min; filter; pause; save the segment\\
+\ui{Helicorder} & one day in 30-minute rows; click for the detail view; box zoom; clipboard picture\\
+\ui{Data} & station, time range, coverage bar, download, preview, health, spectrogram, noise spectrum, exports, Python code\\
+\ui{Guide} & the built-in short guide and the explanations behind the (?) icons\\
+\ui{Settings} & add and edit Shakes; time zone; data folder\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Mouse and keyboard}
+\begin{center}\small
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+Action & Effect\\ \midrule
+Click a helicorder row & opens the detail view at that time\\
+Drag in the coverage strip & selects a time range (Data page)\\
+Drag a rectangle (Box zoom on) & zooms the detail waveform to the rectangle\\
+Hover over a plot & shows the value at that point\\
+Hover over \raisebox{-1pt}{(?)} & one-line explanation; click for the full text\\
+\key{Enter} in a time field & applies the typed time\\
+\key{Ctrl}+\key{C} in the terminal & stops the application\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Command line and environment}
+\begin{center}\small
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+Item & Effect\\ \midrule
+\code{uv run rs3d-app} & start the application and open the browser\\
+\code{--port N} & use port $N$ (default 8765, or a free port if it is taken)\\
+\code{--no-browser} & do not open a browser window\\
+\code{RS3D\_DATA\_DIR} & use this folder instead of the default data folder\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Defaults worth remembering}
+\begin{center}\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+Setting & Default\\ \midrule
+Live band-pass & 1--10~Hz, on\\
+Live window & 60~s\\
+Detail window (helicorder) & 2~minutes\\
+Helicorder row length & 30~minutes\\
+Shake archive retention & 7 days\\
+SeedLink port & 18000\\
+Channels & \code{EHZ} vertical, \code{EHN} north--south, \code{EHE} east--west\\
+Sampling rate & 100 samples per second\\
+\bottomrule
+\end{tabular}
+\end{center}

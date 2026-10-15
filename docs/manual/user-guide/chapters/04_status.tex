@@ -1,0 +1,77 @@
+\chapter{The Status page}\label{ch:status}
+
+The \ui{Status} page answers one question: \emph{is everything in order?} It runs eleven read-only tests on your
+laptop's link to the Shake and on the Shake itself, and shows one row for each. It refreshes by itself every 30~seconds; the
+small text next to the Shake's name shows how long ago the last check ran, and the round arrow runs it again.
+
+\begin{figure}[tbp]
+\centering
+\annotshot[0.8\linewidth]{status}{\calloutsStatus}
+\caption{A healthy Shake. (1) The Shake's name and address, and the refresh button. (2) One row per check: icon, name and
+the measured value. (3) A yellow icon is a warning. (4) The \raisebox{-1pt}{\textbf{(?)}} icon explains each check.}\label{fig:status}
+\end{figure}
+
+\section{Reading the icons}
+\begin{center}\small
+\begin{tabular}{@{}cL{0.8\linewidth}@{}}
+\textcolor{rs3dgreen}{\Large$\bullet$} & \textbf{green}: the check passed.\\
+\textcolor{rs3damber}{\Large$\bullet$} & \textbf{yellow}: it works, but you should look at it (for example the Shake still uses its default password).\\
+\textcolor{rs3dred}{\Large$\bullet$} & \textbf{red}: something is broken and the application cannot rely on it.\\
+\textcolor{rs3dgrey}{\Large$\bullet$} & \textbf{grey}: not tested, because a check it depends on failed (no cable, no SSH login).\\
+\end{tabular}
+\end{center}
+Fix the first red row from the top: the checks below it are usually grey because of it.
+
+\section{The eleven checks}
+\begin{table}[tbp]
+\centering\small
+\caption{What each check tests and when it complains.}\label{tab:checks}
+\begin{tabular}{@{}L{0.17\linewidth}L{0.40\linewidth}L{0.34\linewidth}@{}}
+\toprule
+Check & What it tests & Warning or error when\\ \midrule
+\ui{Laptop IP} & the laptop has a 169.254.x.x address on an active wired port & none: red, with \ui{Set IP}\\
+\ui{SeedLink} & the Shake's live-data port (TCP 18000) answers & unreachable: red\\
+\ui{Channels} & the Shake serves \code{EHZ}, \code{EHN}, \code{EHE} & a channel is missing: yellow\\
+\ui{SSH} & the application can log in as the SSH user & wrong password, unreachable, new host key: red\\
+\ui{Clock} & offset between the Shake's clock and its time source & above 100~ms yellow; above 1000~ms or no source red\\
+\ui{Internet} & the Shake can reach the Internet (needed for its clock) & no: yellow\\
+\ui{Wi-Fi} & the Shake's Wi-Fi address & two addresses on the Wi-Fi port: yellow\\
+\ui{Storage} & free space on the Shake's SD card & under 10\,\% free: yellow\\
+\ui{Archive} & the days stored on the Shake and its retention & none stored, or days about to be deleted and not downloaded: yellow\\
+\ui{Data Forwarding} & whether the Shake shares its data publicly & \texttt{ON}: yellow (data and location are public)\\
+\ui{Password} & whether the default password was changed & still default: yellow\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Clock.} Earthquake timing depends on the Shake's clock, which is kept right by the network time protocol. The value shows
+the offset in milliseconds and the time source. A Shake with no source drifts, and after a power cut restarts from an old time. With
+the laptop on a direct cable and no router, a Shake normally obtains its time over its Wi-Fi Internet connection, which
+is why the \ui{Internet} and \ui{Wi-Fi} checks come next.
+
+\paragraph{Archive.} The Shake writes one file per channel per day and deletes days older than its retention (7 days on a standard
+setup). When some days are about to be deleted and are not on your laptop, the row turns yellow and shows a
+\ui{Download} button that opens the \ui{Data} page. Download at least once a week.
+
+\paragraph{Data Forwarding.} When this is \texttt{ON} and the Shake has Internet access, its data and approximate location are
+public on Raspberry Shake's \emph{ShakeNet}. If you did not intend that, turn it off in the Shake's own web page
+(\emph{Data Sharing}).
+
+\section{When the laptop address is missing}
+If the \ui{Laptop IP} row is red, the cable may be unplugged, the Shake may still be starting, or your system did not assign
+a link-local address. The row offers \ui{Set IP}.
+
+\begin{figure}[tbp]
+\centering
+\shot[0.8\linewidth]{status-problem}
+\caption{The \ui{Laptop IP} check failing. All other checks are grey until it is fixed.}
+\end{figure}
+
+\ui{Set IP} opens a dialog where you choose the wired port and see the \emph{exact commands} that will run. Press \ui{Run}; your
+system asks for permission, and the page checks again. On Linux the application asks NetworkManager to enable a link-local
+address on that connection; on Windows and macOS it switches the adapter to automatic (DHCP) addressing, and the system then
+assigns the 169.254.x.x address itself.
+
+\section{Fixing the other rows}
+Every row has a \raisebox{-1pt}{\textbf{(?)}} icon; its text states the cause and the fix for the problem it found. The most
+common ones are in Chapter~\ref{ch:trouble}.

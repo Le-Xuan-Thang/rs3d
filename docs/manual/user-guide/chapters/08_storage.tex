@@ -1,0 +1,45 @@
+\chapter{Settings, preferences and storage}\label{ch:storage}
+
+\section{The Settings page}
+Besides the device form (Chapter~\ref{ch:connect}) the \ui{Settings} page has an \ui{App} card with two items.
+\begin{description}[leftmargin=3.2cm,style=nextline]
+\item[Time shown as] \ui{UTC} or \ui{Local}. It changes the time zone of the fields and axes on the Live, Data and Helicorder pages; stored data
+  and exports are always UTC. The same toggle is on the Data page.
+\item[Data folder] the folder where everything is kept (Section~\ref{sec:folder}).
+\end{description}
+
+\section{What the application remembers}
+The application remembers, between sessions, the Shake you were using, your choice of UTC or local time, and your last choices on
+the data pages: the station, \ui{counts} or \ui{m/s}, whether the band-pass was on, and its two frequencies. These are saved the
+moment you change them. Passwords are not saved in any file: they go to your operating system's key store.
+
+\section{Inside the data folder}\label{sec:folder}
+\begin{center}
+\begin{tabular}{@{}L{0.22\linewidth}L{0.68\linewidth}@{}}
+\toprule
+Item & Contents\\ \midrule
+\file{sds/} & your data: one miniSEED file per channel per day, in the SDS layout (Appendix~\ref{app:formats})\\
+\file{response/} & instrument responses (StationXML) downloaded for the \ui{m/s} switch\\
+\file{config.toml} & the list of Shakes (name, address, ports, user; no passwords)\\
+\file{settings.toml} & the preferences described above\\
+\file{known\_hosts} & the SSH identities of your Shakes\\
+\file{logs/} & log files\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Back up.} Copy the whole \file{sds/} folder (and, if you like, \file{config.toml}). It contains ordinary files that other
+seismology software can read directly.
+
+\paragraph{Move to another disk.} Close the application, copy the folder, and start the application with \code{RS3D\_DATA\_DIR} set to
+the new place (Section~\ref{ch:install}).
+
+\paragraph{Reset the stored Shake identity.} If a Shake's SD card is replaced, its SSH identity changes and the \ui{SSH} check reports it.
+Delete the line of that address from \file{known\_hosts} and refresh the Status page.
+
+\paragraph{Free space.} A day of three channels occupies about 85~MB, so a year is about 30~GB.
+
+\begin{rs3dwarn}[The Shake keeps only a week]
+The Shake deletes days older than its retention (7 days by default). Download new days regularly (the Status page warns when days
+are about to be deleted); your laptop's copy may then be the only one.
+\end{rs3dwarn}

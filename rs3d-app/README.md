@@ -44,3 +44,10 @@ uv run pytest              # unit and page tests, no device needed
 uv run pytest -m e2e       # real-browser test (needs Google Chrome)
 uv run pytest -m device    # extra tests that need a Shake on the network
 ```
+
+## Manuals
+
+* `docs/RS3D_Users_Guide.pdf` — how to use the application.
+* `docs/RS3D_Theory_Manual.pdf` — the theory and algorithms behind every function.
+
+Both are LaTeX; see `docs/manual/README.md` to rebuild them.

@@ -1,0 +1,127 @@
+\chapter{The Helicorder}\label{ch:heli}
+
+A \emph{helicorder} wraps a whole day of seismic data into rows, like lines of text, so that a day fits on one screen and an
+event stands out as a burst on one line. The \ui{Helicorder} page shows one channel of one day; a click on any row opens a detail
+view of that moment.
+
+\begin{figure}[tbp]
+\centering
+\shot[\linewidth]{heli-day}
+\caption{One day of the demonstration station. Each row is 30~minutes; rows alternate in colour. The local earthquake is the burst
+in the 03:00 row, the noise bursts are the narrow spikes around 10:00 and 11:30, and the white gap in the 17:00 rows is a data gap.}\label{fig:heliday}
+\end{figure}
+
+\section{Opening the helicorder}
+Choose \ui{Helicorder} in the sidebar. The page shows the newest day for which data exist on the laptop. The helicorder reads
+the data that are \emph{already on your laptop}: for a day you have not downloaded yet, first use the \ui{Data} page
+(Chapter~\ref{ch:data}); a day without data is shown as empty with a message.
+
+\section{The controls}
+The row of controls above the plot has, from left to right:
+\begin{description}[leftmargin=3.2cm,style=nextline]
+\item[Station, channel] the station and the channel to draw (the vertical \code{EHZ} first).
+\item[\ \raisebox{-1pt}{$\langle$}\ date\ \raisebox{-1pt}{$\rangle$}] the day shown; the arrows move to the previous and the next day.
+\item[counts / m/s] raw counts or ground velocity (Section~\ref{sec:units}; \ui{m/s} needs the instrument response).
+\item[Band-pass] switches a band-pass filter on or off; the band is the one last set on the \ui{Data} page (1--10~Hz at first).
+\item[Scale] makes the traces taller or shorter ($0.5\times$ to $8\times$); see below.
+\end{description}
+
+\section{Reading the day view}
+Time runs from left to right along a row (0 to 30 minutes, labelled \emph{Minutes}); rows follow each other from 00:00
+at the top. The labels at the \textbf{left} are UTC hours; the labels at the \textbf{right} are the same hours in your local time. A quiet
+row is a thin line; shaking makes it fatter; a hole is blank.
+
+\paragraph{The amplitude scale.} All rows share \emph{one} scale, so rows can be compared. At $1\times$ the ordinary signal fills about
+one row and only the strongest one per cent exceeds it, so a single huge event does not flatten the rest of the day. If everything
+looks too flat use \ui{2$\times$} or \ui{4$\times$}; if rows overlap too much use \ui{0.5$\times$}. Each row has its own offset removed first, so the
+instrument's DC offset does not push traces out of their rows (Theory Manual, Section~9.2).
+
+\section{Opening the detail view}
+\textbf{Click anywhere on a row.} A panel opens above the day view showing about two minutes centred on the point you clicked.
+(The click is accurate to about ten seconds; use the buttons below to adjust.)
+
+\begin{figure}[tbp]
+\centering
+\annotshot[\linewidth]{heli-detail}{\calloutsHeli}
+\caption{The detail view after clicking the 03:00 row at 12~minutes. (1) Station, channel, time range and units. (2) Fit.
+(3) Box zoom. (4) Zoom out. (5) Zoom in. (6) Earlier. (7) Later. (8) Waveform, Spectra, Spectrogram. (9) Clipboard. (10) Close.}\label{fig:heli}
+\end{figure}
+
+\subsection{The toolbar}
+\begin{description}[leftmargin=3.2cm,style=nextline]
+\item[Zoom out, zoom in \hspace{0.2em}(4, 5)] show twice or half as much time around the same centre, between 5 seconds and one hour.
+\item[Earlier, later \hspace{0.2em}(6, 7)] move the window by half of its length.
+\item[Fit \hspace{0.2em}(2)] rescales the vertical axis to the data that are in view and removes any amplitude zoom. The time window
+  is kept. To go back to the original two minutes, click the row again.
+\item[Box zoom \hspace{0.2em}(3)] see below.
+\item[Waveform / Spectra / Spectrogram \hspace{0.2em}(8)] choose how the window is drawn.
+\item[Clipboard \hspace{0.2em}(9)] opens the Waveform Clipboard (Section~\ref{sec:clip}).
+\item[Close \hspace{0.2em}(10)] hides the panel.
+\end{description}
+
+\section{Three views of the same window}
+\paragraph{Waveform} is the amplitude against time. Here the P wave arrives at 03:12:20 and the larger S wave a few seconds later.
+
+\paragraph{Spectra} shows how much of each frequency the window contains, on logarithmic axes: frequency in hertz horizontally,
+amplitude vertically. It is good for finding a steady interfering frequency and for seeing where an earthquake has its energy
+(Theory Manual, Chapter~5).
+
+\begin{figure}[tbp]
+\centering
+\shot[0.92\linewidth]{heli-spectra}
+\caption{\ui{Spectra} mode: amplitude spectrum of the same two minutes.}
+\end{figure}
+
+\paragraph{Spectrogram} shows the frequencies against time for the window: the sudden broadband arrival of the earthquake and its
+fading coda stand out clearly (Theory Manual, Chapter~6).
+
+\begin{figure}[tbp]
+\centering
+\shot[0.92\linewidth]{heli-spectrogram}
+\caption{\ui{Spectrogram} mode.}
+\end{figure}
+
+\section{Zooming in with a rectangle}
+The \ui{Box zoom} tool lets you drag a rectangle on the waveform and zoom into exactly that part, in time \emph{and} in amplitude.
+\begin{enumerate}
+\item Press the Box zoom button (3); it turns blue.
+\item Press the mouse button at one corner of the part you want, drag to the opposite corner, and release.
+\item The window now shows only the time range of the rectangle, reloaded at full detail, and the vertical axis shows only its amplitude range.
+\end{enumerate}
+Switch the button off to go back to normal mouse behaviour. The tool works in \ui{Waveform} mode.
+
+\begin{figure}[tbp]
+\centering
+\shot[0.92\linewidth]{heli-box-drag}
+\caption{Dragging a rectangle around the earthquake onset (the blue rectangle).}
+\end{figure}
+
+\begin{figure}[tbp]
+\centering
+\shot[0.92\linewidth]{heli-box-result}
+\caption{After releasing: 29 seconds from 03:12:13 to 03:12:42. The P wave arrives at 03:12:20 and the stronger S wave at about
+03:12:29. The vertical axis now shows only the amplitudes of the rectangle.}
+\end{figure}
+
+A rectangle narrower than five seconds is widened to five seconds around its centre. \ui{Fit} removes the amplitude zoom;
+the zoom buttons change the time span as before.
+
+\section{The Waveform Clipboard}\label{sec:clip}
+The clipboard button (9) opens a dialog with the three views stacked: waveform, spectrogram and spectrum, for the window that is
+currently on screen. The camera button at the top right saves them as \textbf{one picture} (PNG) that your browser downloads;
+the picture has a title with the station, channel, time range in UTC, units and filter. The cross closes the dialog.
+
+\begin{figure}[tbp]
+\centering
+\shot[0.92\linewidth]{heli-clipboard}
+\caption{The Waveform Clipboard for a 20-second window. The camera saves the three panels as one picture.}
+\end{figure}
+
+\section{Tips}
+\begin{itemize}
+\item To find events quickly, scan the day view for fat or tall spots on a row, then click them.
+\item Turn the band-pass on (1--10~Hz) to see local earthquakes more clearly; turn it off to see the real signal.
+\item A very short event may be one burst on a single row; use \ui{Box zoom} on its onset to read the P and S arrival times to a
+  fraction of a second.
+\item Man-made noise (footsteps, a door, a vehicle) looks like a short burst without the slowly fading tail that an earthquake has.
+\end{itemize}

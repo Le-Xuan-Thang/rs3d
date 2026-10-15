@@ -33,6 +33,7 @@
 \RequirePackage[font=small,labelfont={bf,color=rs3dblue},format=hang]{caption}
 \RequirePackage{subcaption}
 \RequirePackage{float}
+\RequirePackage{needspace}
 \floatplacement{figure}{tbp}
 \floatplacement{table}{tbp}
 \RequirePackage{bm}
@@ -140,3 +141,25 @@
   \end{tikzpicture}
   \null
   \end{titlepage}}
+
+% ------------------------------------------------------------------ screenshots with numbered callouts
+\tikzset{callout/.style={circle,fill=rs3dred,text=white,font=\bfseries\sffamily\fontsize{6.5}{7}\selectfont,inner sep=0pt,
+  minimum size=3.8mm,draw=white,line width=0.5pt}}
+\newcommand{\shot}[2][\linewidth]{{\setlength{\fboxsep}{0pt}\setlength{\fboxrule}{0.4pt}%
+  \fcolorbox{rs3dgrey!45}{white}{\includegraphics[width=#1]{ug-#2}}}}
+% \annotshot[width]{file}{x1/y1/1, x2/y2/2, ...}  with x,y as fractions of the image (origin bottom left)
+\newcommand{\annotshot}[3][\linewidth]{%
+  \edef\annotlist{#3}%
+  \begin{tikzpicture}
+    \node[anchor=south west,inner sep=0,draw=rs3dgrey!45,line width=0.4pt] (img) at (0,0)
+      {\includegraphics[width=#1]{ug-#2}};
+    \begin{scope}[x={(img.south east)},y={(img.north west)}]
+      \foreach \cx/\cy/\cn in \annotlist {\node[callout] at (\cx,\cy) {\cn};}
+    \end{scope}
+  \end{tikzpicture}}
+% float pages start at the top of the page instead of being centred vertically
+\makeatletter
+\setlength{\@fptop}{0pt}\setlength{\@fpsep}{12pt plus 1fil}\setlength{\@fpbot}{0pt plus 1fil}
+\makeatother
+\renewcommand{\topfraction}{0.9}\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.1}\renewcommand{\floatpagefraction}{0.75}

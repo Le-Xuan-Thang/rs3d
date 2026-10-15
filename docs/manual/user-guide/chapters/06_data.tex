@@ -1,0 +1,148 @@
+\chapter{The Data page}\label{ch:data}
+
+The \ui{Data} page is where recorded data are downloaded, inspected and exported. The workflow is always the same: \textbf{pick a
+station, pick a time range, choose how to process it, press the big button, then look and export.}
+
+\begin{figure}[tbp]
+\centering
+\annotshot[\linewidth]{data-top}{\calloutsData}
+\caption{The Data page before a preview. (1) Station. (2) Import a miniSEED file. (3) Start and end. (4) Presets.
+(5) UTC or local time. (6) Visible span of the coverage bar. (7) Move the visible span. (8) Coverage bar. (9) Selection handle.
+(10) Files that will be downloaded. (11) Channels. (12) Band-pass. (13) Units. (14) Download and preview.}\label{fig:datatop}
+\end{figure}
+
+\section{Choose a station}
+The \ui{Station} list (1) contains your Shake, and every other station whose data are on this laptop (for example from imported
+files). A station name has three parts separated by dots: network, station and location, for example \code{AM.R77A7.00}.
+
+\section{Choose a time range}
+\paragraph{Typing.} The \ui{Start} and \ui{End} fields (3) take a date and time written as year-month-day hour:minute:second, for example \code{2026-10-15 03:00:00}. Press
+\key{Enter} or click away to apply. A malformed value shows a hint with the expected form. The text next to the toggle shows
+the length of the range.
+
+\paragraph{Presets.} The clock button (4) opens a menu of ready-made ranges.
+
+\begin{figure}[tbp]
+\centering
+\shot[0.8\linewidth]{data-presets}
+\caption{The presets menu: \ui{Last 10 min}, \ui{Last hour}, \ui{Today}, \ui{Yesterday} and \ui{Last 7 days}.}
+\end{figure}
+
+\paragraph{UTC or local.} Seismic data are always stored and exported in UTC. The toggle (5) only changes the time zone in which the
+fields and axes are \emph{displayed and typed}; \ui{Today} and \ui{Yesterday} follow it. The code and the files you export always use UTC.
+
+\section{The coverage bar}
+The coloured bar (8) shows what exists for the visible span.
+\begin{center}\small
+\begin{tabular}{@{}cl@{}}
+\textcolor{rs3dgreen}{\rule{1.2em}{1ex}} & \textbf{green}: the data are on this laptop\\
+\textcolor{rs3dgrey}{\rule{1.2em}{1ex}} & \textbf{grey}: the data exist only on the Shake and have not been downloaded\\
+\textcolor{rs3dred}{\rule{1.2em}{1ex}} & \textbf{red}: no data anywhere (a gap, or time that has not happened yet appears blank)\\
+\end{tabular}
+\end{center}
+
+The strip below it (9) is the selection. Drag in it to select a range, drag its handles to change the start or end, or drag the
+middle to move it; the \ui{Start} and \ui{End} fields follow. \ui{Week}, \ui{Day} and \ui{Hour} (6) change how much time the bar shows, and
+the arrows (7) move to the previous or next span.
+
+\begin{figure}[tbp]
+\centering
+\shot[0.95\linewidth]{data-coverage}
+\caption{The coverage bar for 15~October: green where the demo data are on the laptop, and the selection (light blue) about 03:00--04:00.}
+\end{figure}
+
+\paragraph{Files to download.} The number next to (10) is how many day files will be copied from the Shake when you press the
+button. Today's file is always copied again, because the Shake keeps writing to it.
+
+\section{Choose channels, filter and units}
+\paragraph{Channels (11).} Tick the channels to load: \code{EHZ} (vertical), \code{EHN} (north--south), \code{EHE} (east--west).
+
+\paragraph{Band-pass (12).} Switch it on to keep only the frequencies between the two boxes (1 and 10~Hz at first) and remove
+drift and high-frequency noise. The band you enter is remembered for next time. The filter is zero-phase, so it does not delay the
+waveform, but it smears sharp onsets slightly backwards in time; do not use it to read exact arrival times (Theory Manual, Chapter~4).
+
+\paragraph{Units (13).}\label{sec:units}
+\ui{counts} are the raw numbers of the converter. \ui{m/s} converts them to ground velocity using the instrument response. The first
+time you choose \ui{m/s} for a station the application downloads the response once from the Raspberry Shake service (the laptop
+needs Internet that one time) and keeps it, after which the switch works offline. Without it and without Internet you get an error
+message instead of a chart.
+
+\section{Download and preview}
+Press the large button (14). For your own Shake it reads \ui{Download \& preview}: it first copies the day files you do not yet
+have, showing progress (\emph{Downloading 2/6: EHZ 2026-10-14}), then draws the data. For a station that is not a connected Shake
+(for example an imported file) the button reads \ui{Preview} and only reads local files. If the Shake is switched off the
+download is skipped, an explanation is shown and whatever is already on the laptop is displayed.
+
+\section{Reading the preview}
+\begin{figure}[tbp]
+\centering
+\shot[\linewidth]{data-waveforms}
+\caption{The waveform preview of one hour (03:00--04:00): three channels sharing one time axis. The short spike near 03:12 is the
+local earthquake; the amplitude axes are in raw counts.}\label{fig:datawf}
+\end{figure}
+
+\paragraph{Waveforms.} One plot per selected channel, with the time axis in the zone you chose. Hover for the value at a point. The
+counts do not oscillate around zero because they sit on the instrument's offset (Theory Manual, Section~3.4); switching the
+band-pass on removes it.
+
+\paragraph{Data health.} Just under the export buttons, one line says how complete the selected range is and how many gaps it has,
+for example \emph{100.00\,\% complete $\cdot$ no gaps}. If there are gaps their start, end and length are listed in the time
+zone you chose (Theory Manual, Chapter~8).
+
+\paragraph{Spectrogram.} A picture of \emph{which frequencies were present when}. Time runs left to right, frequency (0 to 50~Hz)
+bottom to top, colour is power in decibels (red strong, blue weak). Use the channel selector next to the title to choose
+\code{EHZ}, \code{EHN} or \code{EHE}. An earthquake is a vertical streak; a steady horizontal line is a constant interfering
+frequency, here a 30~Hz line that is part of the demonstration data. Blank columns are gaps.
+
+\begin{figure}[tbp]
+\centering
+\shot[\linewidth]{data-spectrogram}
+\caption{The spectrogram of the same hour for \code{EHZ}. The horizontal red line near 30~Hz is a steady interference; the dark
+patch near 03:12 is the earthquake.}
+\end{figure}
+
+\paragraph{Noise spectrum.} The median level of each frequency over the whole selection, with a band showing the 10th to 90th
+percentile. It is the quickest way to compare a quiet period with a busy one: select night, preview, select midday, preview again.
+It is in raw units and is meant for \emph{comparing your own selections}, not for comparing with published noise models
+(Theory Manual, Chapter~7).
+
+\begin{figure}[tbp]
+\centering
+\shot[\linewidth]{data-noise}
+\caption{The noise spectrum: median (green) and 10th/90th percentile (dashed). The spike at 30~Hz is the interference line; the fall
+near 50~Hz is the Shake's anti-alias filter.}
+\end{figure}
+
+\section{Exporting}
+After a preview the export buttons below the waveforms become active: \ui{miniSEED}, \ui{CSV}, \ui{PNG}, \ui{PDF} and
+\ui{</> Code}. The file name is the network, the station, the start and the end time in UTC, and the extension. For example:
+\begin{center}\code{AM.DEMO1\_20261015T030000\_20261015T040000.mseed}\end{center}
+Exports contain exactly what the preview shows: if the
+band-pass was on, the file is filtered; if you chose \ui{m/s}, it is in m/s.
+
+\begin{description}[leftmargin=3.2cm,style=nextline]
+\item[miniSEED] the standard seismological format, readable by ObsPy, SeisComP and most other tools. Gaps are kept.
+\item[CSV] a text table: one column of UTC times and one column per channel, one row per sample; missing samples are empty.
+  All channels must have the same sampling rate. See Appendix~\ref{app:formats}.
+\item[PNG, PDF] a picture of the waveforms for reports.
+\item[</> Code] opens a dialog with a short Python (ObsPy) program that reproduces \emph{exactly} the processing behind the preview,
+  and a button to save it as a \file{.py} file. It reads from this laptop's data folder, so it runs without the Shake. Use it when
+  you want to go further than the application does, or to document how a number was obtained.
+\end{description}
+
+\begin{figure}[tbp]
+\centering
+\shot[0.82\linewidth]{data-code}
+\caption{The generated Python program for the preview above.}
+\end{figure}
+
+\section{Importing miniSEED files}
+\ui{Import miniSEED} (2) adds a file from anywhere, for example from another Shake, a university network or a data centre. Accepted
+names end in \code{.mseed}, \code{.msd}, \code{.miniseed} or \code{.ms}, up to 2~GB. The file is split into one file per channel
+per day in your data folder, next to the data from your Shake, and the page switches to the imported station. Importing the same
+file twice changes nothing; importing a file with overlapping data merges them. Imported stations then appear in the \ui{Station}
+list, on the \ui{Helicorder} page and everywhere else.
+
+\begin{rs3dtip}[No Shake needed]
+Import is also the quickest way to try the application: the whole Data and Helicorder pages work on any miniSEED file.
+\end{rs3dtip}

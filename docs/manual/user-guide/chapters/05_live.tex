@@ -1,0 +1,50 @@
+\chapter{The Live page}\label{ch:live}
+
+The \ui{Live} page draws the three channels as they arrive from the Shake. It needs only the cable and the live-data port, not
+the SSH login, and keeps working while the Status page shows warnings.
+
+\begin{figure}[tbp]
+\centering
+\annotshot[0.95\linewidth]{live}{\calloutsLive}
+\caption{The Live page showing the demonstration earthquake arriving on all three channels. (1) Time window. (2) Filter switch
+and band. (3) Pause. (4) Save this segment. (5) Connection state.}\label{fig:live}
+\end{figure}
+
+\section{The controls}
+\begin{description}[leftmargin=3.4cm,style=nextline]
+\item[Window] how many seconds are shown: \ui{30 s}, \ui{60 s}, \ui{5 min} or \ui{10 min}. The page keeps the last ten minutes of data;
+  a longer window than the data collected so far is simply partly empty.
+\item[Filter] a band-pass filter applied to what you see, between the two frequencies in the boxes (1 and 10~Hz at first). It hides
+  the slow drift and the high-frequency noise so that the earthquake stands out. Switch it off to see the raw signal, or change the
+  numbers. The filter changes only the display (Chapter~4 of the Theory Manual).
+\item[Pause] freezes the picture so that you can look at it. Data keep arriving in the background; \ui{Resume} jumps to the present.
+\item[Save this segment] opens the \ui{Data} page on exactly the interval that is displayed, so you can inspect or export it
+  (Chapter~\ref{ch:data}). The data must exist in the Shake's archive for it to be downloaded.
+\item[Connection state] at the right of the toolbar, see below.
+\end{description}
+
+\section{The channels}
+The three plots, from top to bottom, are \code{EHZ} (vertical), \code{EHN} (north--south) and \code{EHE} (east--west). Each has its own
+amplitude axis in \emph{counts}, the raw numbers from the Shake's converter. The time axis is in UTC or in your local time,
+as chosen in \ui{Settings}.
+
+\section{Connection states}
+\begin{center}\small
+\begin{tabular}{@{}lL{0.66\linewidth}@{}}
+\toprule
+Shown & Meaning\\ \midrule
+\ui{connecting\ldots} & the application is opening the connection\\
+\ui{live} & data are arriving\\
+\ui{waiting for data\ldots} & the connection is open but no data has arrived for five seconds\\
+\ui{reconnecting\ldots (reason)} & the link was lost; the reason (for example \emph{connection refused}) is shown, and the application tries
+again after 2, 4, 8, 16 and then every 30 seconds\\
+\ui{stopped} & the stream was stopped\\
+\bottomrule
+\end{tabular}
+\end{center}
+You do not need to do anything: when the Shake comes back, the page resumes by itself.
+
+\begin{rs3dtip}[A delay of a few seconds is normal]
+The Shake sends data in short blocks; the picture is typically a few seconds behind the ground. This is a property of the
+instrument's data blocks, not of the application (Theory Manual, Section~11.5).
+\end{rs3dtip}

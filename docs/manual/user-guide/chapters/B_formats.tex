@@ -1,0 +1,34 @@
+\chapter{File formats}\label{app:formats}
+
+\section{miniSEED and the SDS folder layout}\label{app:formats:sds}
+Data are stored as miniSEED, the standard seismological exchange format, one file per channel per day, in the \emph{SeisComP data
+structure} (SDS):
+\begin{center}
+\code{sds/YEAR/NET/STA/CHAN.D/NET.STA.LOC.CHAN.D.YEAR.DOY}
+\end{center}
+\code{DOY} is the day of the year with three digits. Example: the vertical channel of 15~October 2026 for station \code{AM.DEMO1.00} is
+\begin{center}
+\code{sds/2026/AM/DEMO1/EHZ.D/AM.DEMO1.00.EHZ.D.2026.288}
+\end{center}
+Any program that reads SDS (ObsPy, SeisComP, many others) can use the folder directly.
+
+\section{CSV}
+The CSV export has a header row, then one row per sample: the UTC time (ISO format with microseconds and a final \code{Z}) and one
+column per channel. A missing sample (a gap) is an empty cell. All channels must have the same sampling rate. Example:
+
+\inputminted{text}{../figures/sample.csv}
+
+\section{The generated Python script}
+The \ui{</> Code} button writes a short ObsPy program that reproduces the preview. For one hour of the three channels with the band-pass
+1--10~Hz switched on:
+
+\inputminted{python}{../figures/sample-script.py}
+
+The first block reads the day files from the data folder; \code{trim} cuts them to the selection; with \ui{m/s} the program also reads
+the cached response and calls \code{remove\_response}; with the band-pass it removes the mean and filters. The explanation of each step
+is in the Theory Manual, Chapters~3 and~4.
+
+\section{PNG and PDF}
+The waveform exports are pictures of the selected channels, one above the other, 1200 pixels wide. The helicorder clipboard picture is a
+12-by-9-inch figure with three panels (waveform, spectrogram, amplitude spectrum) and a title line naming the station, channel,
+UTC time range, units and filter.

@@ -1,0 +1,33 @@
+\chapter*{About this guide}
+\addcontentsline{toc}{chapter}{About this guide}
+
+RS3D is a desktop application for the \textbf{Raspberry Shake 3D} seismograph. It runs on your laptop, talks to the Shake over
+an Ethernet cable, and gives you four things: a health check of the Shake and its connection, a live view of the three
+ground-motion channels, a tool to download, inspect and export recorded data, and a 24-hour \emph{helicorder} with a detail
+view for looking closely at any moment.
+
+This guide teaches you to use it, from the first start to troubleshooting. It is task-oriented: each chapter starts from
+something you want to do. If you want to know \emph{why} a plot looks the way it does, or how a number is computed, the
+companion \emph{Theory and Algorithms Manual} explains it; the two manuals refer to each other by chapter.
+
+\paragraph{Who this guide is for.} Anyone who owns a Raspberry Shake 3D and wants to look at its data on a laptop: hobbyists,
+students, teachers and researchers. No programming is required to use the application; the optional Python script it can
+generate is for people who want to go further.
+
+\paragraph{How the screenshots were made.} Every screenshot was captured from the running application by a script. To avoid
+publishing anyone's real station, the examples use a \emph{synthetic} recording of a fictitious station called
+\code{DEMO1}: one day of noise containing a local earthquake at 03:12~UTC, a distant earthquake at 14:40, two noise bursts and two
+data gaps. Your own data will look different, usually quieter and without so many events.
+
+\begin{rs3dkey}[Conventions used in this guide]
+\ui{Bold sans-serif} is text you see on screen: a button, a page or a label. \code{Monospace} is something you type or a file
+name. A \key{Key} is a keyboard key. Numbered red circles in a screenshot refer to the numbered list next to it.
+\end{rs3dkey}
+
+\begin{rs3dnote}[Where alerts are]
+Earthquake \emph{alerts} (a notification when the ground starts to shake) are planned and are not part of this edition.
+Their theory is in Chapter~10 of the Theory Manual; a chapter on using them will be added when the feature ships.
+\end{rs3dnote}
+
+\bigskip
+\begin{center}\small\textsf{\textcolor{rs3dgrey}{RS3D project, October 2026}}\end{center}

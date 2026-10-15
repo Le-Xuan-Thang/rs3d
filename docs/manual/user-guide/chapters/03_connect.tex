@@ -1,0 +1,53 @@
+\chapter{Connecting a Shake}\label{ch:connect}
+
+\section{Cabling and power}
+\begin{enumerate}
+\item Place the Shake on a solid, level floor, ideally on the ground floor, away from doors, fans and footsteps.
+\item Connect its Ethernet port directly to your laptop's network port.
+\item Power the Shake with its own supply and wait \textbf{three to five minutes} for it to start.
+\end{enumerate}
+Without a router (no DHCP server) both ends give themselves a \emph{link-local} address in the range \code{169.254.x.x}. That
+is normal and is what RS3D expects.
+
+\section{Give the laptop a 169.254.x.x address}
+The laptop needs an address in the same range on the wired port. Many systems do this by themselves when the cable is plugged in.
+If they do not, the \ui{Status} page shows \ui{Laptop IP} in red with a \ui{Set IP} button
+(Chapter~\ref{ch:status}). Pressing it shows the exact commands, asks your system for permission and applies them.
+
+\section{Find the Shake}
+Press \ui{Find Shake\ldots} in the sidebar. RS3D looks for Shakes on the cable (it tries the names \code{rs.local},
+\code{rs-2.local} and so on, and the addresses your computer has recently seen) and confirms each candidate by asking it for
+its station name. Every Shake it finds is listed with its station code and address; press \ui{Add} to add it.
+
+If nothing is found, check the cable, wait a little longer for the Shake to start, and see Chapter~\ref{ch:trouble}; you can always add
+the Shake by hand.
+
+\section{Add a Shake by hand}
+Open \ui{Settings}. The \ui{Device} card has these fields.
+
+\begin{figure}[tbp]
+\centering
+\annotshot[0.82\linewidth]{settings}{\calloutsSettings}
+\caption{The \ui{Settings} page. (1)--(6) The device fields, described below. (7) \ui{Save}. (8) \ui{Test connection}. (9) Time zone of the displayed times. (10) The data folder.}
+\end{figure}
+
+\begin{enumerate}
+\item \ui{Name}: what you want to call it in the sidebar (default: the station code).
+\item \ui{IP / host name}: the Shake's address, for example \code{169.254.221.62} or \code{rs.local}.
+\item \ui{SeedLink port}: the live-data port; 18000 unless you changed it on the Shake.
+\item \ui{SSH user}: the account RS3D uses to read the Shake's clock, storage and archive; \code{myshake} on a standard Shake.
+\item \ui{SSH password}: that account's password. It is stored in your operating system's key store (not in a file) and never
+  leaves your computer.
+\item \ui{SSH key file (optional)}: a private key, if you prefer key login to a password.
+\end{enumerate}
+Press \ui{Test connection}; \ui{Connection OK} means the login works. Then press \ui{Save}.
+
+\begin{rs3dwarn}[Change the default password]
+A new Raspberry Shake uses a published default password. The \ui{Password} check on the Status page warns while it is unchanged. To
+change it, log in to the Shake over SSH and run \code{passwd}, then enter the new password in \ui{Settings}. RS3D only \emph{reads}
+from the Shake and never changes anything on it.
+\end{rs3dwarn}
+
+\section{More than one Shake}
+Every Shake you add appears in the sidebar under \ui{Devices}; click a name to switch. \ui{New device} on the \ui{Settings} page
+starts an empty form, and \ui{Remove} deletes the selected device (its downloaded data stay on disk).

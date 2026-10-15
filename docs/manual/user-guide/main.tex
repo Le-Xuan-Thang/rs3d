@@ -1,0 +1,36 @@
+\documentclass[a4paper,11pt,twoside,openright,headings=small,numbers=noenddot,parskip=half-]{scrbook}
+\PassOptionsToPackage{outputdir=../build/guide}{minted2}
+\usepackage{rs3d}
+\usepackage[backend=biber,style=authoryear,maxbibnames=6,maxcitenames=2,giveninits=true,uniquename=init,
+  sorting=nyt]{biblatex}
+\addbibresource{../common/refs.bib}
+\graphicspath{{../figures/}}
+\input{../figures/ug-callouts.tex}
+\hypersetup{pdftitle={RS3D User's Guide},pdfauthor={RS3D project}}
+
+\begin{document}
+\frontmatter
+\manualcover{User's Guide}%
+  {Status, live view, data download and analysis, and the helicorder for your Raspberry Shake 3D}%
+  {Edition 1.0 \textbullet\ October 2026 \textbullet\ for rs3d-app 0.1 and later}%
+  {Companion to the RS3D Theory and Algorithms Manual. Every screenshot was captured from the running application.}
+\manualheader{User's Guide}
+\input{chapters/00_front}
+\tableofcontents
+\mainmatter
+\input{chapters/01_intro}
+\input{chapters/02_install}
+\input{chapters/03_connect}
+\input{chapters/04_status}
+\input{chapters/05_live}
+\input{chapters/06_data}
+\input{chapters/07_helicorder}
+\input{chapters/08_storage}
+\input{chapters/09_trouble}
+\appendix
+\input{chapters/A_reference}
+\input{chapters/B_formats}
+\input{chapters/C_glossary}
+\backmatter
+\printbibliography[heading=bibintoc,title={References}]
+\end{document}
