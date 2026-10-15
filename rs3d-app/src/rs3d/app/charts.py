@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 import numpy as np
 from obspy import Stream, UTCDateTime
 
@@ -102,3 +104,43 @@ def set_selection(options: dict, selection: tuple[UTCDateTime, UTCDateTime]) -> 
     dz.pop("start", None)
     dz.pop("end", None)
     dz["startValue"], dz["endValue"] = _ms(selection[0]), _ms(selection[1])
+
+
+def _bin(a: np.ndarray, n: int) -> np.ndarray:
+    """Index of the output bin (0..n-1) for each input position, spreading len(a) evenly over n bins."""
+    return np.minimum((np.arange(len(a)) * n) // max(len(a), 1), n - 1)
+
+
+def spectrogram_options(times: np.ndarray, freqs: np.ndarray, power_db: np.ndarray, use_utc: bool = True,
+                        max_cells: tuple[int, int] = (400, 200)) -> dict:
+    """Heatmap of power_db (freqs x times). Cells are averaged down to max_cells; NaN (gap) cells are left out."""
+    nx, ny = min(len(times), max_cells[0]), min(len(freqs), max_cells[1])
+    bx, by = _bin(times, nx), _bin(freqs, ny)
+    total = np.zeros((ny, nx))
+    count = np.zeros((ny, nx))
+    ok = ~np.isnan(power_db)
+    np.add.at(total, (by[:, None].repeat(len(times), 1)[ok], bx[None, :].repeat(len(freqs), 0)[ok]), power_db[ok])
+    np.add.at(count, (by[:, None].repeat(len(times), 1)[ok], bx[None, :].repeat(len(freqs), 0)[ok]), 1)
+    mean = np.divide(total, count, out=np.full_like(total, np.nan), where=count > 0)
+    tz = timezone.utc if use_utc else None
+    x_first = [times[bx == i][0] for i in range(nx)]
+    y_first = [freqs[by == i][0] for i in range(ny)]
+    labels = [datetime.fromtimestamp(float(t), tz).strftime("%Y-%m-%d %H:%M:%S") for t in x_first]
+    cells = [[int(i), int(j), round(float(mean[j, i]), 1)] for j in range(ny) for i in range(nx)
+             if not np.isnan(mean[j, i])]
+    values = [c[2] for c in cells] or [0.0, 1.0]
+    lo, hi = float(np.percentile(values, 2)), float(np.percentile(values, 98))
+    if hi <= lo:
+        hi = lo + 1.0
+    return {
+        "animation": False,
+        "grid": {"left": 70, "right": 90, "top": 8, "bottom": 40},
+        "xAxis": {"type": "category", "data": labels, "axisLabel": {"hideOverlap": True}, "splitArea": {"show": False}},
+        "yAxis": {"type": "category", "data": [f"{f:.1f}" for f in y_first], "name": "Hz", "nameLocation": "middle",
+                  "nameGap": 48, "axisLabel": {"interval": max(ny // 6, 1) - 1}},
+        "visualMap": {"min": lo, "max": hi, "calculable": True, "orient": "vertical", "right": 4, "top": "middle",
+                      "text": ["dB", ""], "inRange": {"color": ["#313695", "#4575b4", "#abd9e9", "#fee090",
+                                                                "#f46d43", "#a50026"]}},
+        "tooltip": {"position": "top"},
+        "series": [{"type": "heatmap", "data": cells, "progressive": 0}],
+    }

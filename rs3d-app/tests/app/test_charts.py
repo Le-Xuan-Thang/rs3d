@@ -44,3 +44,26 @@ def test_coverage_colours_slider_and_future_blank():
     assert dz["xAxisIndex"] == 1  # slider drives the hidden axis, not the coverage strip
     set_selection(opt, (UTCDateTime("2026-10-12T12:00"), UTCDateTime("2026-10-12T13:00")))
     assert dz["startValue"] == UTCDateTime("2026-10-12T12:00").timestamp * 1000
+
+
+def test_spectrogram_options_heatmap_skips_nan_and_caps_cells():
+    from rs3d.app.charts import spectrogram_options
+    times = 1.7e9 + np.arange(1000) * 10.0
+    freqs = np.linspace(0, 50, 500)
+    power = np.full((500, 1000), -100.0)
+    power[:, 10] = np.nan
+    opt = spectrogram_options(times, freqs, power, use_utc=True, max_cells=(100, 50))
+    s = opt["series"][0]
+    assert s["type"] == "heatmap"
+    assert len(opt["xAxis"]["data"]) <= 100 and len(opt["yAxis"]["data"]) <= 50
+    assert all(c[2] is not None and c[2] == c[2] for c in s["data"])  # no NaN cells
+    assert opt["visualMap"]["min"] < opt["visualMap"]["max"]
+
+
+def test_spectrogram_options_labels_follow_timezone():
+    from rs3d.app.charts import spectrogram_options
+    times = np.array([0.0, 10.0])
+    freqs = np.array([0.0, 1.0])
+    power = np.zeros((2, 2))
+    utc = spectrogram_options(times, freqs, power, use_utc=True)["xAxis"]["data"][0]
+    assert utc.startswith("1970-01-01 00:00")

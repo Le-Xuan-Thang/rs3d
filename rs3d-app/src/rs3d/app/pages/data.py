@@ -10,7 +10,8 @@ from nicegui import run, ui
 from obspy import UTCDateTime
 
 from rs3d.app import timeutil
-from rs3d.app.charts import coverage_options, set_selection, set_stream_data, waveform_options
+from rs3d.app.charts import (coverage_options, set_selection, set_stream_data, spectrogram_options,
+                             waveform_options)
 from rs3d.app.state import CHANNELS, AppState
 from rs3d.app.strings import label
 from rs3d.app.widgets import frame, help_icon
@@ -20,6 +21,7 @@ from rs3d.core.coverage import State, coverage
 from rs3d.core.export import load_processed, write_csv, write_mseed, write_plot
 from rs3d.core.models import Device, Selection
 from rs3d.core.response import cache_path, cached_inventory, get_inventory
+from rs3d.core.spectro import spectrogram, window_for
 
 ZOOMS = ("week", "day", "hour")
 MAX_IMPORT_BYTES = 2_000_000_000
@@ -166,6 +168,11 @@ def register(state: AppState) -> None:
         for b in export_buttons:
             b.disable()
 
+        with ui.row().classes("items-center gap-2"):
+            ui.label(label("data.spectrogram")).classes("font-bold")
+            spec_channel = ui.select(list(channels), value=channels[0]).props("dense").classes("w-24")
+        spec_chart = ui.echart({"series": []}).classes("w-full").style("height: 36vh")
+
         # ------------------------------------------------------------ helpers
         def selection() -> Selection:
             chans = tuple(ch for ch, box in ch_boxes.items() if box.value) or channels
@@ -238,8 +245,26 @@ def register(state: AppState) -> None:
                                               timeutil.shift_view(ctx["zoom"], ctx["view"][0], direction))
             redraw_bar()
 
+        def draw_spectrogram() -> None:
+            st = ctx["stream"]
+            traces = st.select(channel=spec_channel.value).copy() if st is not None else []
+            if not len(traces):
+                spec_chart.options.clear()
+                spec_chart.options.update({"series": []})
+                spec_chart.update()
+                return
+            traces.merge(method=0)  # one masked trace; gaps become masked samples
+            tr = traces[0]
+            times, freqs, power = spectrogram(tr, window_for(tr.stats.endtime - tr.stats.starttime))
+            spec_chart.options.clear()
+            spec_chart.options.update(spectrogram_options(times, freqs, power, use_utc=not tz.value))
+            spec_chart.update()
+
+        spec_channel.on_value_change(lambda _: draw_spectrogram())
+
         def on_tz(_=None) -> None:
             state.set_use_local_time(tz.value)
+            draw_spectrogram()
             write_fields()
             redraw_bar()
             preview.options["useUTC"] = not tz.value
@@ -291,6 +316,7 @@ def register(state: AppState) -> None:
                 ctx["stream"] = st
                 set_stream_data(preview.options, st)
                 preview.update()
+                draw_spectrogram()
                 status["text"] = "" if len(st) else label("data.nothing")
                 for b in export_buttons:
                     b.enable() if len(st) else b.disable()

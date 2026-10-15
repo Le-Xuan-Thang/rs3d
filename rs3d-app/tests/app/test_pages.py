@@ -43,6 +43,7 @@ def test_data_page_uses_query_range():
         await user.open("/data?start=1791831600&end=1791835200")  # 2026-10-12 20:00 -> 21:00 UTC
         await user.should_see("Download & preview")
         await user.should_see("1 h 00 m 00 s")
+        await user.should_see("Spectrogram")
     run(scenario)
 
 
