@@ -81,7 +81,9 @@ def register(state: AppState) -> None:
             ui.navigate.to("/data?" + urlencode({"station": key}))
 
         with ui.row().classes("items-center gap-2"):
-            picker = ui.select(choices, value=station if station in choices else (choices[0] if choices else None),
+            remembered = state.data_prefs["station"]
+            picker = ui.select(choices, value=station if station in choices else
+                               (remembered if remembered in choices else (choices[0] if choices else None)),
                                label=label("data.station")).props("dense").classes("w-56")
             uploader = ui.upload(auto_upload=True, on_upload=on_import, max_file_size=MAX_IMPORT_BYTES) \
                 .props('accept=".mseed,.msd,.miniseed,.ms"').classes("hidden")
@@ -97,7 +99,11 @@ def register(state: AppState) -> None:
         channels = tuple(state.store.channels(net, sta, loc))
         if is_device:
             channels = tuple(dict.fromkeys(CHANNELS + channels))
-        picker.on_value_change(lambda e: ui.navigate.to("/data?" + urlencode({"station": e.value})))
+        def on_station(e) -> None:
+            state.set_data_prefs(station=e.value)
+            ui.navigate.to("/data?" + urlencode({"station": e.value}))
+
+        picker.on_value_change(on_station)
 
         if start and end:
             sel = [UTCDateTime(float(start)), UTCDateTime(float(end))]
@@ -140,12 +146,13 @@ def register(state: AppState) -> None:
         # ------------------------------------------------------------ 2. processing
         with ui.row().classes("items-center gap-4"):
             ch_boxes = {ch: ui.checkbox(ch, value=True) for ch in channels}
-            flt = ui.switch(label("data.filter"), value=False)
-            fmin = ui.number(value=1.0, min=0.01, step=0.5, format="%.2f").props("dense").classes("w-20")
-            fmax = ui.number(value=10.0, min=0.02, step=0.5, format="%.2f").props("dense").classes("w-20")
+            prefs = state.data_prefs
+            flt = ui.switch(label("data.filter"), value=prefs["filter"])
+            fmin = ui.number(value=prefs["fmin"], min=0.01, step=0.5, format="%.2f").props("dense").classes("w-20")
+            fmax = ui.number(value=prefs["fmax"], min=0.02, step=0.5, format="%.2f").props("dense").classes("w-20")
             ui.label("Hz")
             with ui.row().classes("items-center gap-1"):
-                units = ui.toggle(["counts", "m/s"], value="counts").props("dense no-caps")
+                units = ui.toggle(["counts", "m/s"], value=prefs["units"]).props("dense no-caps")
                 help_icon("units")
             go = ui.button(label("action.download_preview" if is_device else "action.preview"),
                            icon="download" if is_device else "visibility").props("unelevated")
@@ -285,6 +292,13 @@ def register(state: AppState) -> None:
             psd_chart.update()
 
         spec_channel.on_value_change(lambda _: draw_spectrogram())
+
+        def save_prefs(_=None) -> None:
+            state.set_data_prefs(units=units.value, filter=bool(flt.value),
+                                 fmin=float(fmin.value or 1.0), fmax=float(fmax.value or 10.0))
+
+        for control in (units, flt, fmin, fmax):
+            control.on_value_change(save_prefs)
 
         def on_tz(_=None) -> None:
             state.set_use_local_time(tz.value)

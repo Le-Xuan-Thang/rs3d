@@ -16,6 +16,22 @@ from rs3d.core.status import run_checks
 from rs3d.core.store import Store
 
 CHANNELS = ("EHZ", "EHN", "EHE")
+DATA_PREF_DEFAULTS = {"units": "counts", "filter": False, "fmin": 1.0, "fmax": 10.0, "station": None}
+
+
+def _clean_prefs(raw: dict) -> dict:
+    """Saved Data-page choices, with anything missing or of the wrong type replaced by its default."""
+    prefs = dict(DATA_PREF_DEFAULTS)
+    if raw.get("units") in ("counts", "m/s"):
+        prefs["units"] = raw["units"]
+    if isinstance(raw.get("filter"), bool):
+        prefs["filter"] = raw["filter"]
+    for key in ("fmin", "fmax"):
+        if isinstance(raw.get(key), (int, float)) and not isinstance(raw[key], bool):
+            prefs[key] = float(raw[key])
+    if isinstance(raw.get("station"), str) and raw["station"]:
+        prefs["station"] = raw["station"]
+    return prefs
 
 
 class AppState:
@@ -27,19 +43,25 @@ class AppState:
         self._settings_path = paths.root / "settings.toml"
         settings = tomllib.loads(self._settings_path.read_text()) if self._settings_path.exists() else {}
         self.use_local_time: bool = bool(settings.get("use_local_time", False))
+        self.data_prefs: dict = _clean_prefs(settings.get("data_prefs", {}))
         devices = self.registry.load()
         self.current_host: str | None = settings.get("current_host") or (devices[0].host if devices else None)
         self._live: dict[str, LiveStream] = {}
 
     # ---------------------------------------------------------------- settings
     def save_settings(self) -> None:
-        data = {"use_local_time": self.use_local_time}
+        data: dict = {"use_local_time": self.use_local_time,
+                      "data_prefs": {k: v for k, v in self.data_prefs.items() if v is not None}}
         if self.current_host:
             data["current_host"] = self.current_host
         self._settings_path.write_text(tomli_w.dumps(data))
 
     def set_use_local_time(self, value: bool) -> None:
         self.use_local_time = value
+        self.save_settings()
+
+    def set_data_prefs(self, **changes) -> None:
+        self.data_prefs = _clean_prefs({**self.data_prefs, **changes})
         self.save_settings()
 
     # ---------------------------------------------------------------- devices

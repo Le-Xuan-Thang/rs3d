@@ -64,3 +64,17 @@ def test_index_redirects_to_status():
         await user.open("/")
         await user.should_see("Laptop IP")
     run(scenario)
+
+
+def test_data_page_remembers_band_pass_choice(tmp_path):
+    import tomllib
+    from nicegui import ui
+
+    async def scenario(user):
+        await user.open("/data?start=1791831600&end=1791835200")
+        user.find(kind=ui.switch).click()
+        saved = tomllib.loads((tmp_path / "settings.toml").read_text())
+        assert saved["data_prefs"]["filter"] is True
+        await user.open("/data?start=1791831600&end=1791835200")
+        assert user.find(kind=ui.switch).elements.pop().value is True
+    run(scenario)
