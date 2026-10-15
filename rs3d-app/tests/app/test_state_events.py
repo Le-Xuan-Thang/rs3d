@@ -171,3 +171,33 @@ def test_discarded_detector_cannot_open_a_late_event(tmp_path):
     state.set_event_settings(EventSettings(on=4.5))
     old.feed(noise(200, burst=(150, 199.9), amp=5000))  # a packet the live thread already held
     assert state.event_open is None and not old.active
+
+
+def test_start_current_starts_live_for_current_device(tmp_path, monkeypatch):
+    from rs3d.core.models import Device
+    state = make(tmp_path)
+    calls = []
+    monkeypatch.setattr(state, "live", lambda d: calls.append(d.host))
+    state.start_current()
+    assert calls == []  # no device yet
+    state.save_device(Device(name="a", host="ha"))
+    assert calls == ["ha"]
+    state.save_device(Device(name="b", host="hb"))
+    assert calls == ["ha", "hb"]
+    state.select("ha")
+    assert calls == ["ha", "hb", "ha"]
+    calls.clear()
+    state.start_current()
+    assert calls == ["ha"]
+
+
+def test_start_current_logs_failures(tmp_path, monkeypatch, caplog):
+    from rs3d.core.models import Device
+    state = make(tmp_path)
+    state.registry.upsert(Device(name="a", host="ha"))
+
+    def boom(d):
+        raise RuntimeError("no socket")
+    monkeypatch.setattr(state, "live", boom)
+    state.start_current()  # must not raise
+    assert "no socket" in caplog.text

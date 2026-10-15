@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import tomllib
 from collections import deque
 from dataclasses import asdict, fields
@@ -18,6 +19,8 @@ from rs3d.core.seedlink import SeedLinkSource
 from rs3d.core.shell import Shell
 from rs3d.core.status import run_checks
 from rs3d.core.store import Store
+
+log = logging.getLogger(__name__)
 
 CHANNELS = ("EHZ", "EHN", "EHE")
 DATA_PREF_DEFAULTS = {"units": "counts", "filter": False, "fmin": 1.0, "fmax": 10.0, "station": None}
@@ -135,6 +138,17 @@ class AppState:
     def select(self, host: str) -> None:
         self.current_host = host
         self.save_settings()
+        self.start_current()
+
+    def start_current(self) -> None:
+        """Start the live stream (and so the event detector) of the current device, if there is one."""
+        device = self.current()
+        if device is None:
+            return
+        try:
+            self.live(device)
+        except Exception:
+            log.exception("could not start the live stream for %s", device.host)
 
     def save_device(self, device: Device, password: str | None = None) -> None:
         self.registry.upsert(device)

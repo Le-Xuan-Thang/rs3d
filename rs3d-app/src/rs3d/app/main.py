@@ -19,6 +19,7 @@ def build(state: AppState) -> None:
     def index() -> None:
         ui.navigate.to("/status" if state.devices() else "/settings")
 
+    app.on_startup(state.start_current)  # detection runs without the Live page open
     app.on_shutdown(state.stop_all)
 
 
