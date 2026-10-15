@@ -10,14 +10,15 @@ from nicegui import run, ui
 from obspy import UTCDateTime
 
 from rs3d.app import timeutil
-from rs3d.app.charts import (coverage_options, psd_options, set_selection, set_stream_data, spectrogram_options,
-                             waveform_options)
+from rs3d.app.charts import (coverage_options, psd_options, set_event_areas, set_selection, set_stream_data,
+                             spectrogram_options, waveform_options)
 from rs3d.app.state import CHANNELS, AppState
 from rs3d.app.strings import label
 from rs3d.app.widgets import frame, help_icon
 from rs3d.core import archive
 from rs3d.core.codegen import generate
 from rs3d.core.coverage import State, coverage
+from rs3d.core.events_scan import days_between, scan_day
 from rs3d.core.export import load_processed, write_csv, write_mseed, write_plot
 from rs3d.core.health import health
 from rs3d.core.models import Device, Selection
@@ -32,6 +33,11 @@ def files_needed(remote: set, local_days_by_channel: dict, start: UTCDateTime, e
                  channels: tuple[str, ...]) -> int:
     return sum(len(archive.days_to_fetch(remote, local_days_by_channel.get(ch, set()), start.date,
                                          (end - 1e-6).date)) for ch in channels)
+
+
+def scan_dates(start: UTCDateTime, end: UTCDateTime, available: set) -> list:
+    """Days of the selection that exist locally, ascending (an end exactly at midnight excludes the next day)."""
+    return [d for d in days_between(start.date, (end - 1e-6).date) if d in available]
 
 
 def station_key(net: str, sta: str, loc: str) -> str:
@@ -156,6 +162,7 @@ def register(state: AppState) -> None:
                 help_icon("units")
             go = ui.button(label("action.download_preview" if is_device else "action.preview"),
                            icon="download" if is_device else "visibility").props("unelevated")
+            rescan = ui.button(label("events.rescan"), icon="radar").props("flat dense no-caps")
 
         # ------------------------------------------------------------ 3. preview / 4. export
         progress = ui.label(label("data.hint")).classes("text-sm text-grey-7")
@@ -208,6 +215,36 @@ def register(state: AppState) -> None:
             bar.options.clear()
             bar.options.update(coverage_options(view, segs, tuple(sel), now=UTCDateTime(), use_utc=not tz.value))
             bar.update()
+
+        def mark_events(s: Selection) -> None:
+            found = state.events.events_between(s.start.timestamp, s.end.timestamp)
+            set_event_areas(preview.options, [(e.start, e.end) for e in found])
+            preview.update()
+
+        async def scan_selection(s: Selection) -> None:
+            """Detect events on the selection's stored days with the current settings, then mark them."""
+            cfg = state.event_settings
+            if not cfg.enabled:
+                mark_events(s)
+                return
+            days = scan_dates(s.start, s.end, state.store.days(net, sta, loc, cfg.channel))
+            status["text"] = label("events.scanning")
+            total = 0
+            for day in days:
+                total += await run.io_bound(scan_day, state.store, state.events, cfg, net, sta, loc, day)
+            status["text"] = label("events.found").format(n=total)
+            mark_events(s)
+
+        async def on_rescan() -> None:
+            rescan.disable()
+            try:
+                await scan_selection(selection())
+            except Exception as exc:
+                ui.notify(str(exc), type="negative", multi_line=True)
+            finally:
+                rescan.enable()
+
+        rescan.on_click(on_rescan)
 
         def set_range(a: UTCDateTime, b: UTCDateTime) -> None:
             if b <= a:
@@ -363,6 +400,8 @@ def register(state: AppState) -> None:
                     b.enable() if len(st) else b.disable()
                 redraw_bar()
                 write_fields()
+                if len(st):
+                    await scan_selection(s)
             except Exception as exc:
                 ui.notify(str(exc), type="negative", multi_line=True)
             finally:

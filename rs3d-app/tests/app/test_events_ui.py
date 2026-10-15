@@ -69,3 +69,22 @@ def test_live_spans_clip_to_window_and_include_open_event():
     recent = [Event(T - 500, T - 490, 5.0, 1.0, "EHZ", "live"), Event(T - 20, T - 10, 5.0, 1.0, "EHZ", "live")]
     spans = live_spans(recent, (T - 5, 4.0), (T - 60, T))
     assert spans == [(T - 20, T - 10), (T - 5, T)]
+
+
+from datetime import date
+
+from obspy import UTCDateTime
+
+from rs3d.app.pages.data import scan_dates
+
+
+def test_scan_dates_only_days_that_exist():
+    have = {date(2026, 10, 11), date(2026, 10, 13)}
+    got = scan_dates(UTCDateTime("2026-10-11T12:00:00"), UTCDateTime("2026-10-13T06:00:00"), have)
+    assert got == [date(2026, 10, 11), date(2026, 10, 13)]
+
+
+def test_scan_dates_end_exactly_at_midnight_excludes_next_day():
+    have = {date(2026, 10, 12), date(2026, 10, 13)}
+    got = scan_dates(UTCDateTime("2026-10-12T00:00:00"), UTCDateTime("2026-10-13T00:00:00"), have)
+    assert got == [date(2026, 10, 12)]
