@@ -20,6 +20,7 @@ line under **Unreleased** in the same commit or pull request that makes it.
 - Guide section "Events" and (?) help texts for every event setting.
 - Status → Clock now compares the Shake's time with the laptop's, and says which one looks wrong.
 - **Sync clock** button on the Status page: **Sync now** restarts the Shake's time service (laptop or Wi-Fi time source); **Set from laptop** copies the laptop's UTC time to the Shake. Every attempt is logged in `logs/clock-sync.log`.
+- Status → Clock explains when the laptop's own clock looks wrong (before 2025), and offers no fix in that case.
 
 ### Changed
 - Documentation: `docs/Manual.odt` regenerated; `data/` (downloaded miniSEED files) is now ignored by git.
