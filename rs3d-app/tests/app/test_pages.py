@@ -45,6 +45,7 @@ def test_data_page_uses_query_range():
         await user.should_see("1 h 00 m 00 s")
         await user.should_see("Spectrogram")
         await user.should_see("Noise spectrum")
+        await user.should_see("Data health")
     run(scenario)
 
 

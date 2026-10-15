@@ -19,6 +19,7 @@ from rs3d.core import archive
 from rs3d.core.codegen import generate
 from rs3d.core.coverage import State, coverage
 from rs3d.core.export import load_processed, write_csv, write_mseed, write_plot
+from rs3d.core.health import health
 from rs3d.core.models import Device, Selection
 from rs3d.core.response import cache_path, cached_inventory, get_inventory
 from rs3d.core.spectro import psd_summary, spectrogram, window_for
@@ -171,6 +172,9 @@ def register(state: AppState) -> None:
         with ui.row().classes("items-center gap-2"):
             ui.label(label("data.spectrogram")).classes("font-bold")
             spec_channel = ui.select(list(channels), value=channels[0]).props("dense").classes("w-24")
+        ui.label(label("data.health")).classes("font-bold")
+        health_label = ui.label("—").classes("text-sm")
+        health_gaps = ui.column().classes("gap-0 font-mono text-sm")
         spec_chart = ui.echart({"series": []}).classes("w-full").style("height: 36vh")
         ui.label(label("data.psd")).classes("font-bold")
         psd_chart = ui.echart({"series": []}).classes("w-full").style("height: 28vh")
@@ -247,6 +251,18 @@ def register(state: AppState) -> None:
                                               timeutil.shift_view(ctx["zoom"], ctx["view"][0], direction))
             redraw_bar()
 
+        def draw_health(st, s: Selection) -> None:
+            ctx["health"] = (st, s)
+            h = health(st, s.start, s.end)
+            gap_text = label("data.no_gaps") if not h.gaps else f"{len(h.gaps)} {label('data.gaps')}"
+            health_label.text = f"{h.completeness * 100:.2f} % {label('data.completeness')} · {gap_text}"
+            health_gaps.clear()
+            with health_gaps:
+                for a, b in h.gaps[:50]:
+                    ui.label(f"{timeutil.to_text(a, tz.value)} → {timeutil.to_text(b, tz.value)}  ({int(b - a)} s)")
+                if len(h.gaps) > 50:
+                    ui.label(f"… +{len(h.gaps) - 50}")
+
         def draw_spectrogram() -> None:
             st = ctx["stream"]
             traces = st.select(channel=spec_channel.value).copy() if st is not None else []
@@ -273,6 +289,8 @@ def register(state: AppState) -> None:
         def on_tz(_=None) -> None:
             state.set_use_local_time(tz.value)
             draw_spectrogram()
+            if ctx.get("health"):
+                draw_health(*ctx["health"])
             write_fields()
             redraw_bar()
             preview.options["useUTC"] = not tz.value
@@ -325,6 +343,7 @@ def register(state: AppState) -> None:
                 set_stream_data(preview.options, st)
                 preview.update()
                 draw_spectrogram()
+                draw_health(st, s)
                 status["text"] = "" if len(st) else label("data.nothing")
                 for b in export_buttons:
                     b.enable() if len(st) else b.disable()
