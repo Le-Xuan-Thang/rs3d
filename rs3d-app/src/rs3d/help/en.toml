@@ -1,0 +1,304 @@
+# All user-facing text of rs3d-app (English). Add vi.toml / pt.toml with the same keys later.
+# [labels] = short UI labels. [help.<id>] = text behind a (?) icon: short = tooltip, detail = Markdown panel.
+
+[labels]
+app = "RS3D"
+devices = "Devices"
+find = "Find Shake…"
+no_device = "No Shake yet. Plug the cable in and use Find Shake…, or add one in Settings."
+
+[labels.nav]
+status = "Status"
+live = "Live"
+helicorder = "Helicorder"
+data = "Data"
+guide = "Guide"
+settings = "Settings"
+
+[labels.check]
+laptop_ip = "Laptop IP"
+seedlink = "SeedLink"
+channels = "Channels"
+ssh = "SSH"
+clock = "Clock"
+internet = "Internet"
+wifi = "Wi-Fi"
+storage = "Storage"
+archive = "Archive"
+forwarding = "Data Forwarding"
+password = "Password"
+
+[labels.action]
+refresh = "Refresh"
+set_ip = "Set IP"
+download = "Download"
+run = "Run"
+cancel = "Cancel"
+close = "Close"
+add = "Add"
+save = "Save"
+remove = "Remove"
+test = "Test connection"
+pause = "Pause"
+resume = "Resume"
+save_segment = "Save this segment"
+download_preview = "Download & preview"
+preview = "Preview"
+copy = "Copy"
+save_py = "Save .py"
+
+[labels.live]
+window = "Window"
+filter = "Filter"
+live = "live"
+connecting = "connecting…"
+reconnecting = "reconnecting…"
+waiting = "waiting for data…"
+stopped = "stopped"
+
+[labels.data]
+start = "Start"
+end = "End"
+presets = "Presets"
+utc = "UTC"
+local = "Local"
+week = "Week"
+day = "Day"
+hour = "Hour"
+files_needed = "Files to download"
+channels = "Channels"
+filter = "Band-pass"
+units = "Units"
+preview = "Preview"
+export = "Export"
+code = "Code"
+nothing = "No data in this range."
+hint = "Choose a time range, then press the button above to load and plot it."
+spectrogram = "Spectrogram"
+psd = "Noise spectrum"
+health = "Data health"
+completeness = "complete"
+no_gaps = "no gaps"
+gaps = "gaps"
+downloading = "Downloading"
+bad_time = "Use YYYY-MM-DD hh:mm:ss"
+station = "Station"
+import = "Import miniSEED"
+imported = "Imported"
+empty = "No data yet. Connect a Shake, or import a miniSEED file."
+
+[labels.heli]
+title = "Day view"
+scale = "Scale"
+previous_day = "Previous day"
+next_day = "Next day"
+
+[labels.detail]
+waveform = "Waveform"
+spectra = "Spectra"
+spectrogram = "Spectrogram"
+fit = "Fit amplitude to the view"
+zoom_in = "Zoom in"
+zoom_out = "Zoom out"
+box_zoom = "Box zoom: drag a rectangle to zoom in"
+earlier = "Earlier"
+later = "Later"
+no_window_data = "No data in this window."
+
+[labels.clipboard]
+title = "Waveform Clipboard"
+camera = "Save picture"
+
+[labels.preset]
+last_10_min = "Last 10 min"
+last_hour = "Last hour"
+today = "Today"
+yesterday = "Yesterday"
+last_7_days = "Last 7 days"
+
+[labels.settings]
+device = "Device"
+name = "Name"
+host = "IP / host name"
+port = "SeedLink port"
+user = "SSH user"
+password = "SSH password"
+key = "SSH key file (optional)"
+app = "App"
+timezone = "Time shown as"
+data_dir = "Data folder"
+saved = "Saved"
+ok = "Connection OK"
+new = "New device"
+
+[labels.setip]
+title = "Give this laptop a 169.254.x.x address"
+interface = "Wired interface"
+commands = "Commands that will run"
+done = "Done. Checking again…"
+
+# ---------------------------------------------------------------- (?) texts
+
+[help.laptop_ip]
+short = "The laptop needs a 169.254.x.x address on the cable to reach the Shake."
+detail = """
+The Shake has no DHCP server on the cable, so both sides use **link-local** addresses (`169.254.x.x`).
+
+**Fix:** press **Set IP**. The app asks your OS for permission, then lets it pick a free link-local address:
+
+- Linux: `nmcli connection modify <connection> ipv4.link-local enabled`
+- Windows: switch the Ethernet adapter to DHCP (Windows then self-assigns 169.254.x.x)
+- macOS: `networksetup -setdhcp <service>`
+
+Check that the cable is plugged in and the Shake is powered.
+"""
+
+[help.seedlink]
+short = "Live data port of the Shake (TCP 18000)."
+detail = """
+The app reads live data with **SeedLink** on port 18000.
+
+If this fails: check the cable, wait 3–5 minutes after powering the Shake, and check the IP in **Settings**.
+"""
+
+[help.channels]
+short = "Channels served by the Shake. An RS3D has EHZ, EHN and EHE."
+detail = "EHZ = vertical, EHN = north–south, EHE = east–west, 100 samples per second."
+
+[help.ssh]
+short = "The app logs in (read-only) to read clock, storage and archive."
+detail = """
+SSH (port 22) with the user and password from **Settings**. The app never changes anything on the Shake.
+"""
+
+[help.ssh.auth]
+short = "Wrong user name, password or key."
+detail = "Open **Settings**, enter the Shake's SSH password (default `shakeme` unless changed) and press **Test connection**."
+
+[help.ssh.unreachable]
+short = "Cannot reach the Shake on port 22."
+detail = "Check the cable and the IP in **Settings**. SSH must be enabled on the Shake (it is by default)."
+
+[help.ssh.hostkey]
+short = "The Shake's identity changed."
+detail = """
+The Shake answered with a different SSH host key than before. This is normal after re-installing the Shake's SD card.
+
+If that is the case, delete the line for this IP from the app's `known_hosts` file in the data folder (see **Settings**) and refresh.
+"""
+
+[help.ssh.command]
+short = "A read command failed on the Shake."
+detail = "Refresh. If it keeps failing, the Shake software may be different from the tested version (Shake OS 0.21)."
+
+[help.clock]
+short = "Time offset of the Shake and its time source (ntpq)."
+detail = """
+Seismic timestamps come from the Shake's clock, kept right by **ntpd**.
+
+- Internet servers via Wi-Fi (current setup), or
+- the laptop (`169.254.8.11`) as a backup, or
+- a USB GPS (planned).
+"""
+
+[help.clock.offset]
+short = "The Shake clock is off by more than 100 ms."
+detail = "Data timestamps are unreliable. Check Internet / Wi-Fi on the Shake (see **Internet**) and wait a few minutes for ntpd."
+
+[help.clock.nosource]
+short = "The Shake has no time source."
+detail = """
+`ntpq -p` shows no selected server (`*`). Without one the clock drifts, and after a power cut it restarts from an old time.
+
+Fix Internet on the Shake (see **Internet** and **Wi-Fi**) or connect the laptop that serves time.
+"""
+
+[help.internet]
+short = "Whether the Shake reaches the Internet (needed for its clock)."
+detail = "The Shake uses Wi-Fi for Internet time. Data still flows to the laptop over the cable without Internet."
+
+[help.wifi]
+short = "The Shake's Wi-Fi address."
+detail = "Wi-Fi is used only for Internet time. The app always talks to the Shake over the cable."
+
+[help.wifi.duplicate]
+short = "Two Wi-Fi addresses: Internet will come and go."
+detail = """
+Two DHCP clients manage `wlan0` on the Shake. See **Guide → Wi-Fi: two addresses**.
+
+Fix (on the Shake): move `denyinterfaces wlan0` to the top of `/etc/dhcpcd.conf`, then reboot.
+"""
+
+[help.storage]
+short = "Free space on the Shake's SD card."
+detail = "The Shake needs space for its archive (about 85 MB per day)."
+
+[help.archive]
+short = "Days stored on the Shake, and how long it keeps them."
+detail = """
+The Shake writes one miniSEED file per channel per day and deletes days older than its retention (`archkeep`, 7 days here).
+
+Download data at least once a week, or raise the retention in the Shake web page.
+"""
+
+[help.archive.none]
+short = "No archive found on the Shake."
+detail = "Archiving may be disabled in the Shake web settings. Live data still works."
+
+[help.archive.atrisk]
+short = "Some days will soon be deleted on the Shake and are not downloaded."
+detail = "Open **Data**, select those days and press **Download & preview**."
+
+[help.forwarding]
+short = "Whether the Shake shares data publicly with Raspberry Shake."
+detail = "When ON and the Shake has Internet, its data and location are public on ShakeNet. Turn it off in the Shake web settings (Data Sharing)."
+
+[help.password]
+short = "Whether the Shake still uses the default password."
+detail = "Change it: SSH into the Shake and run `passwd`, then update the password in **Settings**."
+
+[help.unreadable]
+short = "Unexpected answer from the Shake."
+detail = "Refresh. If it persists, the Shake software may differ from the tested version."
+
+[help.import]
+short = "Add a miniSEED file (any station) to this laptop's data folder."
+detail = """
+The file is split into one file per channel per day (SDS layout) in the data folder, next to data downloaded from Shakes.
+
+Importing the same file twice changes nothing. Data from other stations appears in the **Station** list.
+"""
+
+[help.timezone]
+short = "Show times in UTC or in this laptop's time zone. Files and code always use UTC."
+detail = "Seismic data is always stored in UTC. The Local option only changes what you see and type."
+
+[help.presets]
+short = "Quick time ranges."
+detail = "\"Today\" and \"Yesterday\" follow the time zone shown (UTC or Local)."
+
+[help.coverage]
+short = "Green: on this laptop. Grey: only on the Shake. Red: no data."
+detail = """
+- Drag in the lower bar to select a range; drag its handles to change Start/End; drag the middle to move it.
+- Week / Day / Hour and ◀ ▶ change the visible span.
+- Start/End fields and the selection always follow each other.
+"""
+
+[help.files_needed]
+short = "Day files that will be copied from the Shake before preview."
+detail = "Today's file is always copied again because the Shake keeps writing to it."
+
+[help.units]
+short = "counts = raw digitizer values; m/s = ground velocity."
+detail = """
+m/s needs the instrument response. The app downloads it once from the Raspberry Shake service (laptop needs Internet that time) and keeps it.
+"""
+
+[help.code]
+short = "ObsPy code that reproduces this exact export."
+detail = "It reads from this laptop's data folder, so it runs without the Shake."
+
+[help.live_filter]
+short = "Band-pass 1–10 Hz to hide slow drift and high-frequency noise."
+detail = "Applied only to the display. Use the Data page to export filtered data."
