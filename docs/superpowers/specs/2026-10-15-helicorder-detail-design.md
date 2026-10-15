@@ -45,8 +45,8 @@ Strings go in `help/en.toml`.
 
 ### `core/helicorder.py` (new, no UI imports)
 
-- `rows(store, net, sta, loc, channel, day, row_minutes=30, ...)` loads one channel of the day (plus the next day's
-  first minutes when a row crosses midnight), applies units and band-pass with the existing `process()`, and returns 48
+- `rows(store, net, sta, loc, channel, day, row_minutes=30, ...)` loads one channel of the UTC day (rows are
+  midnight-aligned, so none crosses midnight), applies units and band-pass with the existing `process()`, and returns 48
   `Row(start, offsets_s, values)` items.
 - Each row is reduced to min/max pairs of about 3,000 points (the same method as `core/live._minmax_decimate`, reused
   or moved to a shared helper). Gaps stay NaN.
@@ -58,17 +58,18 @@ Strings go in `help/en.toml`.
 ### `app/charts.py` (new builders, plain dicts)
 
 - `helicorder_options(rows, scale, use_utc)` draws each row as a line offset by its row index on one grid. Rows alternate
-  two colours. The left axis shows UTC hours, the right axis local hours. Each row also gets a transparent full-width
-  band that acts as the click target.
+  two colours. The left axis shows UTC hours, the right axis local hours. Each row also gets an invisible grid of scatter points
+  (one every 10 seconds, `symbolSize [10, 14]`) that acts as the click target; the chart is `48*14+44` px high so a
+  row is exactly 14 px. The x axis must not cross at zero (`axisLine.onZero: false`) because the y axis is inverted.
 - `detail_options(mode, ...)` for waveform, spectra (log-log amplitude) and spectrogram. Waveform reuses
   `waveform_options`; spectrogram reuses `spectrogram_options`.
 
-### Click handling and spike
+### Click handling (confirmed by spike, 2026-10-15)
 
-Step 1 of the plan is a spike to confirm that a NiceGUI `ui.echart` reports a click position inside a transparent band.
-If it does not, the fallback is an event listener on the chart's ZRender layer that converts pixels with
-`convertFromPixel`. The design above does not change; only how the click arrives does. If neither works, stop and
-revisit this spec before building on it.
+In a real Chrome, `ui.echart(...).on_point_click` reports a click on the invisible scatter grid as series name
+`"click"` with value `[x_minutes, row_index]` (a click at minute 10 on row 2 gave `[10.083, 2]`). The grid needs 180
+points per row: with a coarse grid (18 per row) clicks between symbols report nothing. Axis labels written as
+`":formatter"` JavaScript strings (a lookup array indexed by the row) render correctly.
 
 ### Detail view
 
@@ -114,4 +115,4 @@ current window only.
 
 ## Open points
 
-None blocking. The click spike is the one technical risk and has a defined fallback.
+None blocking. The click spike has been run and confirmed the approach.
