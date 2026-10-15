@@ -270,3 +270,85 @@ def test_preload_failure_does_not_raise(tmp_path, monkeypatch, caplog):
     monkeypatch.setattr(state, "shell", refuse)
     state._preload(Device(name="a", host="ha"))  # must not raise
     assert "no route" in caplog.text
+
+
+def _preload_state(tmp_path, monkeypatch, results, gate=None):
+    """A preloading AppState whose fake preload_today returns the next of `results` (after `gate`, if given)."""
+    import sys
+    from rs3d.core.models import Device
+    calls = []
+
+    def fake(sftp, store, dev, dt, ch):
+        calls.append(dev.host)
+        if gate is not None:
+            gate.wait(2)
+        return results[len(calls) - 1]
+
+    monkeypatch.setattr(sys.modules[AppState.__module__], "preload_today", fake)
+
+    class FakeShell:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            pass
+
+        def sftp(self):
+            return object()
+
+    state = AppState(AppPaths(tmp_path), passwords=Passwords(NoKeyring()), preload=True)
+    state.registry.upsert(Device(name="a", host="ha"))
+    monkeypatch.setattr(state, "live", lambda d: None)
+    monkeypatch.setattr(state, "shell", lambda d: FakeShell())
+    return state, calls
+
+
+def _wait_idle(state):
+    import time
+    end = time.monotonic() + 2
+    while state._preloading and time.monotonic() < end:
+        time.sleep(0.01)
+    assert not state._preloading
+
+
+def test_preload_runs_once_while_one_is_running(tmp_path, monkeypatch):
+    import threading
+    import time
+    gate = threading.Event()
+    state, calls = _preload_state(tmp_path, monkeypatch, [["EHZ"]], gate)
+    state.start_current()
+    end = time.monotonic() + 2
+    while not calls and time.monotonic() < end:
+        time.sleep(0.01)
+    state.start_current()  # the first preload is still blocked
+    gate.set()
+    _wait_idle(state)
+    assert calls == ["ha"]
+
+
+def test_preload_not_repeated_after_it_filled_the_day(tmp_path, monkeypatch):
+    state, calls = _preload_state(tmp_path, monkeypatch, [["EHZ"], ["EHZ"]])
+    state.start_current()
+    _wait_idle(state)
+    state.start_current()
+    _wait_idle(state)
+    assert calls == ["ha"]
+
+
+def test_preload_retried_after_a_run_that_filled_nothing(tmp_path, monkeypatch):
+    state, calls = _preload_state(tmp_path, monkeypatch, [[], ["EHZ"]])
+    state.start_current()
+    _wait_idle(state)
+    state.start_current()
+    _wait_idle(state)
+    assert calls == ["ha", "ha"]
+
+
+def test_live_view_defaults_and_is_not_saved(tmp_path):
+    state = make(tmp_path)
+    assert state.live_view == {"mode": "wave", "channel": "EHZ", "scale": 1.0}
+    state.save_settings()
+    before = (tmp_path / "settings.toml").read_text()
+    state.live_view.update(mode="heli", channel="EHN", scale=2.0)
+    state.save_settings()
+    assert (tmp_path / "settings.toml").read_text() == before

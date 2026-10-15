@@ -45,6 +45,15 @@ def test_a_later_day_starts_a_new_day():
     assert d._lo["EHZ"][1] == 2 and np.isnan(d._lo["EHZ"][5])
 
 
+def test_an_earlier_day_is_ignored_after_a_rollover():
+    d = DayTrace(DAY)
+    d.add(trace([2], T0 + SECONDS + 1))
+    d.add(trace([9], T0 + 5))  # a late trace from the earlier day
+    assert d.day == date(2026, 10, 13)
+    assert d._lo["EHZ"][1] == 2 and d._hi["EHZ"][1] == 2
+    assert int(np.isfinite(d._lo["EHZ"]).sum()) == 1
+
+
 def test_archive_never_overwrites_live_seconds():
     d = DayTrace(DAY)
     d.add(trace([5, 6], T0 + 100))

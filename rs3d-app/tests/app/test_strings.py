@@ -74,7 +74,7 @@ def test_clock_sync_labels_exist():
 
 
 def test_live_helicorder_texts_exist():
-    for key in ("live.mode_wave", "live.mode_heli", "live.open_heli"):
+    for key in ("live.mode_wave", "live.mode_heli", "live.open_heli", "live.heli_empty"):
         assert label(key) != key, key
     short, detail = help_text("live_heli")
     assert short and detail

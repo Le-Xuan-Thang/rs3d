@@ -59,6 +59,7 @@ stopped = "stopped"
 mode_wave = "Waveform"
 mode_heli = "Helicorder"
 open_heli = "Open on Helicorder page"
+heli_empty = "No data for this channel yet today."
 
 [labels.data]
 start = "Start"
@@ -362,7 +363,7 @@ detail = "Applied only to the display. Use the Data page to export filtered data
 [help.live_heli]
 short = "The whole UTC day in 48 rows of 30 minutes; the newest row grows to the right."
 detail = """
-Each row is 30 minutes of one channel, drawn as the lowest and highest value of every second, without the DC offset.
+Each row is 30 minutes of one channel, drawn as the lowest and highest value of every 2 seconds, without the DC offset.
 Events are shaded. At start-up the app copies today's data from the Shake's archive, so the day is already filled; if
 the Shake cannot be reached the view starts empty and fills from the live stream. A new day starts at 00:00 UTC.
 

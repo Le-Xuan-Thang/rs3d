@@ -7,7 +7,7 @@ import threading
 import tomllib
 from collections import deque
 from dataclasses import asdict, fields
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 import tomli_w
 
@@ -85,6 +85,10 @@ class AppState:
         self.current_host: str | None = settings.get("current_host") or (devices[0].host if devices else None)
         self._live: dict[str, LiveStream] = {}
         self._days: dict[str, DayTrace] = {}
+        self._preload_lock = threading.Lock()
+        self._preloading: set[str] = set()  # hosts whose archive preload is running
+        self._preloaded: dict[str, date] = {}  # host -> UTC day that a preload filled
+        self.live_view: dict = {"mode": "wave", "channel": CHANNELS[0], "scale": 1.0}  # Live page choices, this session only
 
     # ---------------------------------------------------------------- settings
     def save_settings(self) -> None:
@@ -157,17 +161,31 @@ class AppState:
             log.exception("could not start the live stream for %s", device.host)
             return
         if self.preload:
+            self._start_preload(device)
+
+    def _start_preload(self, device: Device) -> None:
+        """Start the archive preload unless one is running or already filled today for this Shake."""
+        with self._preload_lock:
+            if device.host in self._preloading or self._preloaded.get(device.host) == self.day_trace(device).day:
+                return
+            self._preloading.add(device.host)
             threading.Thread(target=self._preload, args=(device,), name="rs3d-preload", daemon=True).start()
 
     def _preload(self, device: Device) -> None:
         """Fill today's helicorder from the Shake's archive. Runs in a thread and never raises."""
         try:
+            day = self.day_trace(device).day
             with self.shell(device) as sh:
-                preload_today(sh.sftp(), self.store, device, self.day_trace(device), CHANNELS)
+                filled = preload_today(sh.sftp(), self.store, device, self.day_trace(device), CHANNELS)
+            if filled:  # a run that filled nothing may be retried by the next start_current
+                self._preloaded[device.host] = day
         except ShellError as exc:
             log.warning("live helicorder: cannot reach %s for the archive: %s", device.host, exc)
         except Exception:
             log.exception("live helicorder preload failed")
+        finally:
+            with self._preload_lock:
+                self._preloading.discard(device.host)
 
     def save_device(self, device: Device, password: str | None = None) -> None:
         self.registry.upsert(device)

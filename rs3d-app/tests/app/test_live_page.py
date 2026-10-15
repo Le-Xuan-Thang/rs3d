@@ -34,6 +34,7 @@ def test_heli_spans_shade_the_channel_and_the_open_event():
     assert heli_spans(e, "EHZ", None, "EHZ", 99.0) == [(10.0, 20.0)]
     assert heli_spans(e, "EHZ", (50.0, 5.0), "EHZ", 99.0) == [(10.0, 20.0), (50.0, 99.0)]
     assert heli_spans(e, "EHN", (50.0, 5.0), "EHZ", 99.0) == [(30.0, 40.0)]  # the open event is on another channel
+    assert heli_spans(e, "EHZ", (50.0, 5.0), "EHZ", 40.0) == [(10.0, 20.0), (50.0, 50.0)]  # stale stream: never ends before it starts
 
 
 def test_heli_options_has_48_rows_and_event_shading():

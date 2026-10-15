@@ -72,7 +72,7 @@ def heli_spans(events, channel: str, open_event: tuple[float, float] | None, det
     """Event spans to shade on the live helicorder; an event in progress runs up to `until` (the newest data)."""
     spans = [(e.start, e.end) for e in events if e.channel == channel]
     if open_event is not None and channel == detect_channel:
-        spans.append((open_event[0], until))
+        spans.append((open_event[0], max(until, open_event[0])))
     return spans
 
 
@@ -100,19 +100,21 @@ def register(state: AppState) -> None:
         days = state.day_trace(device)
 
         with ui.row().classes("items-center gap-1"):
-            mode = ui.toggle({"wave": label("live.mode_wave"), "heli": label("live.mode_heli")}, value="wave") \
+            mode = ui.toggle({"wave": label("live.mode_wave"), "heli": label("live.mode_heli")}, value=state.live_view["mode"]) \
                 .props("dense no-caps")
             help_icon("live_heli")
             status = ui.label("").classes("text-sm text-grey-7 ml-4")
 
         heli_controls = ui.row().classes("items-center gap-4")
         with heli_controls:
-            heli_channel = ui.select(list(CHANNELS), value=CHANNELS[0]).props("dense").classes("w-24")
-            heli_scale = ui.select(SCALES, value=1.0, label=label("heli.scale")).props("dense").classes("w-24")
+            heli_channel = ui.select(list(CHANNELS), value=state.live_view["channel"]).props("dense").classes("w-24")
+            heli_scale = ui.select(SCALES, value=state.live_view["scale"], label=label("heli.scale")).props("dense").classes("w-24")
             ui.button(label("live.open_heli"), icon="open_in_new",
                       on_click=lambda: ui.navigate.to(helicorder_link(device, heli_channel.value, days.day))) \
                 .props("flat dense no-caps")
+        heli_empty = ui.label(label("live.heli_empty")).classes("text-sm text-grey-7")
         heli_controls.set_visibility(False)
+        heli_empty.set_visibility(False)
 
         wave_controls = ui.row().classes("items-center gap-4")
         with wave_controls:
@@ -155,11 +157,22 @@ def register(state: AppState) -> None:
             chart.set_visibility(not heli)
             heli_controls.set_visibility(heli)
             heli_chart.set_visibility(heli)
+            heli_empty.set_visibility(heli and not days.has_data(heli_channel.value))
+            state.live_view["mode"] = mode.value
             view["heli_at"] = 0.0  # draw at once
 
+        def set_heli_channel(_=None) -> None:
+            state.live_view["channel"] = heli_channel.value
+            view["heli_at"] = 0.0
+
+        def set_heli_scale(_=None) -> None:
+            state.live_view["scale"] = heli_scale.value
+            view["heli_at"] = 0.0
+
         mode.on_value_change(set_mode)
-        heli_channel.on_value_change(lambda _: view.update(heli_at=0.0))
-        heli_scale.on_value_change(lambda _: view.update(heli_at=0.0))
+        heli_channel.on_value_change(set_heli_channel)
+        heli_scale.on_value_change(set_heli_scale)
+        set_mode()  # a remembered helicorder mode shows its controls and draws at once
 
         def draw_helicorder(recent_open) -> None:
             if time.monotonic() - view["heli_at"] < HELI_REFRESH:
@@ -167,6 +180,7 @@ def register(state: AppState) -> None:
             view["heli_at"] = time.monotonic()
             channel = heli_channel.value
             rows = days.rows(channel)
+            heli_empty.set_visibility(not days.has_data(channel))
             until = stream.buffer.latest() or days.start
             events = state.events.events_between(days.start, days.start + 86400)
             spans = heli_spans(events, channel, recent_open, state.event_settings.channel, until)
