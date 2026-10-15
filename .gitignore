@@ -29,3 +29,4 @@ rsudp_out/
 
 # LaTeX build output
 docs/manual/build/
+data/
