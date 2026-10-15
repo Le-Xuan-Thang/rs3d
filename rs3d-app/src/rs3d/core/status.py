@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from datetime import date, timedelta
 from typing import Callable
 
+from rs3d.core.clock import diagnose, measure_offset
 from rs3d.core.models import Check, Device, Level
 from rs3d.core.netcheck import check_laptop_ip
 from rs3d.core.seedlink import StationInfo, probe
@@ -126,6 +128,7 @@ def run_checks(
     laptop_ip: Callable[[], Check] = check_laptop_ip,
     probe_fn: Callable[[str, int], StationInfo] = probe,
     shell_factory: Callable[[Device, str | None], Shell] | None = None,
+    now: Callable[[], float] = time.time,
 ) -> list[Check]:
     """All checks in display order. Failed prerequisites turn dependent checks into SKIPPED."""
     today = today or date.today()
@@ -151,6 +154,10 @@ def run_checks(
             raise RuntimeError("no shell factory")
         with shell_factory(device, password) as sh:
             sections = parse_sections(sh.run(SHAKE_SCRIPT))
+            try:
+                offset = measure_offset(sh, now)
+            except (ShellError, ValueError):  # the clock check then falls back to ntpq alone
+                offset = None
         results["ssh"] = Check("ssh", Level.OK, device.ssh_user, "ssh")
     except ShellError as exc:
         results["ssh"] = Check("ssh", Level.ERROR, str(exc), f"ssh.{exc.kind}")
@@ -165,7 +172,7 @@ def run_checks(
         except json.JSONDecodeError:
             config = {}
         checks = {
-            "clock": lambda: clock_check(sections.get("ntpq", "")),
+            "clock": lambda: diagnose(clock_check(sections.get("ntpq", "")), offset),
             "internet": lambda: internet_check(sections.get("internet", "")),
             "wifi": lambda: wifi_check(sections.get("wlan", "")),
             "storage": lambda: storage_check(sections.get("df", "")),

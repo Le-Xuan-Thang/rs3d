@@ -1,4 +1,4 @@
-"""SSH/SFTP session to a Shake (paramiko). Read-only use in v1."""
+"""SSH/SFTP session to a Shake (paramiko). The status checks only read; the clock fix runs sudo commands."""
 
 from __future__ import annotations
 

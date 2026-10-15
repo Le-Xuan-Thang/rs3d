@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from rs3d.core.clock import DATE_COMMAND
 from rs3d.core.models import Check, Device, Level
 from rs3d.core.seedlink import StationInfo
 from rs3d.core.shell import ShellError
@@ -18,9 +19,12 @@ STATION = StationInfo("AM", "R77A7", "00", ("EHZ", "EHN", "EHE"))
 TODAY = date(2026, 10, 12)
 
 
+NOW = 1_800_000_000.0
+
+
 class FakeShell:
-    def __init__(self, output=REAL, error=None):
-        self.output, self.error = output, error
+    def __init__(self, output=REAL, error=None, date=f"{NOW:.9f}"):
+        self.output, self.error, self.date = output, error, date
 
     def __enter__(self):
         if self.error:
@@ -31,6 +35,10 @@ class FakeShell:
         return None
 
     def run(self, command):
+        if command == DATE_COMMAND:
+            if self.date is None:
+                raise ShellError("command", "date failed")
+            return self.date + "\n"
         assert command == SHAKE_SCRIPT
         return self.output
 
@@ -41,7 +49,7 @@ def ok_ip():
 
 def checks(**kw):
     args = dict(laptop_ip=ok_ip, probe_fn=lambda host, port: STATION,
-                shell_factory=lambda dev, pw: FakeShell(), today=TODAY)
+                shell_factory=lambda dev, pw: FakeShell(), today=TODAY, now=lambda: NOW)
     args.update(kw)
     return {c.id: c for c in run_checks(DEVICE, "pw", **args)}
 
@@ -124,3 +132,26 @@ def test_forwarding_password_wifi():
     two = ("3: wlan0 inet 10.10.178.153/21 brd x\n3: wlan0 inet 10.10.176.119/21 brd x")
     assert wifi_check(two).level is Level.WARN and wifi_check(two).help_id == "wifi.duplicate"
     assert wifi_check("").value == "not used"
+
+
+NO_SOURCE = REAL.replace("\n*", "\n+")  # the same ntpq output with no selected source
+
+
+def test_clock_wrong_and_unsynced_offers_the_fix():
+    c = checks(shell_factory=lambda dev, pw: FakeShell(output=NO_SOURCE, date=f"{NOW - 30:.9f}"))["clock"]
+    assert c.level is Level.WARN and c.action == "sync_clock" and "behind the laptop" in c.value
+
+
+def test_clock_year_off_is_an_error():
+    c = checks(shell_factory=lambda dev, pw: FakeShell(output=NO_SOURCE, date=f"{NOW - 86400 * 400:.9f}"))["clock"]
+    assert c.level is Level.ERROR and c.action == "sync_clock"
+
+
+def test_laptop_differs_but_shake_is_synced_gives_no_fix():  # Review Focus 5
+    c = checks(shell_factory=lambda dev, pw: FakeShell(date=f"{NOW + 30:.9f}"))["clock"]
+    assert c.level is Level.WARN and c.action is None and c.help_id == "clock.laptop"
+
+
+def test_failing_date_falls_back_to_the_ntpq_check():  # Review Focus 1
+    c = checks(shell_factory=lambda dev, pw: FakeShell(date=None))["clock"]
+    assert c.level is Level.OK and "ms via" in c.value
