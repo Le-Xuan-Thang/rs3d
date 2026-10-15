@@ -88,7 +88,7 @@ def test_saving_an_empty_window_does_not_raise():
     run(scenario)
 
 
-def test_box_zoom_narrows_the_window_and_amplitude_and_fit_resets_both():
+def test_box_zoom_narrows_the_window_and_amplitude():
     async def scenario():
         REG["ctx"]["ctx"] = ctx()
         panel = REG["panel"]
@@ -97,6 +97,20 @@ def test_box_zoom_narrows_the_window_and_amplitude_and_fit_resets_both():
         await panel.apply_box(t0, t0 + 20000, 250.98765, -100.123456)  # a 20 s box, dragged bottom to top
         assert panel.window[1] - panel.window[0] == 20.0
         assert panel.y_range == (-100.1, 251.0)  # 4 significant figures: readable axis labels
+    run(scenario)
+
+
+def test_fit_rescales_amplitude_but_keeps_the_time_width():
+    async def scenario():
+        REG["ctx"]["ctx"] = ctx()
+        panel = REG["panel"]
+        await panel.open(T)
+        await panel.zoom(0.5)                                 # 60 s
+        t0 = panel.window[0].timestamp * 1000
+        await panel.apply_box(t0, t0 + 20000, -100.0, 250.0)  # 20 s, amplitude zoomed
+        window = panel.window
         await panel.fit()
-        assert panel.window[1] - panel.window[0] == 120.0 and panel.y_range is None
+        assert panel.window == window and panel.y_range is None   # same width, amplitude back to automatic
+        await panel.zoom(2.0)
+        assert panel.window[1] - panel.window[0] == 40.0          # zoom keeps working from the zoomed width
     run(scenario)

@@ -78,7 +78,7 @@ The panel loads the window from the local archive (`store.load`, `process`) and 
 
 | Control | Behaviour |
 |---|---|
-| Fit | back to the originally clicked window |
+| Fit | rescale the amplitude to the data in view; the time window and its width stay as they are |
 | Zoom out / in | window ×2 / ×½ around its centre, then reload |
 | ◀ ▶ | shift by half the window, then reload |
 | Waveform / Spectra / Spectrogram | mutually exclusive panel modes |

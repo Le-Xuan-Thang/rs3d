@@ -100,7 +100,6 @@ class DetailPanel:
 
     def __init__(self, state: AppState, get_ctx: Callable[[], DetailContext]) -> None:
         self.state, self.get_ctx = state, get_ctx
-        self.origin: tuple[UTCDateTime, UTCDateTime] | None = None
         self.window: tuple[UTCDateTime, UTCDateTime] | None = None
         self.mode = "waveform"
         self.y_range: tuple[float, float] | None = None  # amplitude zoom set by box zoom
@@ -141,17 +140,16 @@ class DetailPanel:
         return ok
 
     async def open(self, center: UTCDateTime, span: float = 120.0) -> None:
-        window = (center - span / 2, center + span / 2)
-        if await self.go(window):
-            self.origin = window
+        if await self.go((center - span / 2, center + span / 2)):
             self.card.set_visibility(True)
 
     def close(self) -> None:
         self.card.set_visibility(False)
 
     async def fit(self) -> None:
-        if self.origin:
-            await self.go(self.origin)
+        """Rescale the amplitude to the data in view; the time window (and its width) stays as it is."""
+        if self.window:
+            await self.go(self.window)
 
     async def zoom(self, factor: float) -> None:
         if self.window:
