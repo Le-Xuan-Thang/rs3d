@@ -30,7 +30,8 @@ See [`rs3d-app/README.md`](rs3d-app/README.md) for features, data folder, develo
 ```
 rs3d-app/   the RS3D application (src/, tests/, README.md)
 docs/       manuals (PDF + LaTeX sources), setup notes, design specs and plans
-main.py, read_rs3d.py, pyproject.toml   early scripts that predate rs3d-app
+read_rs3d.py    early SeedLink test script that predates rs3d-app
+main.py, pyproject.toml   leftover project stub (obspy + rsudp); not needed for rs3d-app
 ```
 
 ## Licence
