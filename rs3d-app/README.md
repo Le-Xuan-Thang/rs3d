@@ -19,6 +19,7 @@ Internet. It is not an official Raspberry Shake product.
 | **Live** | Real-time EHZ / EHN / EHE traces over SeedLink (port 18000): 30 s to 10 min windows, adjustable band-pass, pause, reconnect with a visible reason, *Save this segment*. |
 | **Helicorder** | A day in 30-minute rows. Click a row for a zoomable detail view (waveform, spectra, spectrogram, zoom, shift, **box zoom**, Fit) and a *Waveform Clipboard* that saves a picture. |
 | **Data** | Pick a station and time range with a coverage bar (laptop / Shake / gap), download from the Shake's archive or **import any miniSEED file**, then see waveforms, spectrogram, noise spectrum and data health (completeness, gaps). Export **miniSEED, CSV, PNG, PDF**, or a **Python (ObsPy) script** that reproduces exactly what you see. |
+| **Events** | An rsudp-style STA/LTA alert on the live stream: red banner on the Live page, a saved event log, automatic scan of downloaded days, markers on the Data page and the helicorder. All thresholds editable in Settings. |
 | **Guide**, **Settings** | Built-in help behind every (?) icon; add Shakes, time zone, data folder. |
 
 <p align="center">
@@ -105,8 +106,9 @@ uv run pytest -m device    # extra tests that need a Shake on the network
 
 Version 0.1.0 plus the helicorder, spectrogram and manual work.
 
-* **Planned:** earthquake **alerts** (STA/LTA trigger with on-screen, sound, desktop, Telegram/e-mail and saved-plot
-  outputs; the design is in the Theory Manual, Section 10.9) and an in-app **changelog**.
+* **Planned:** more alert outputs (sound, desktop, Telegram/e-mail and saved-plot; the design is in the Theory Manual,
+  Section 10.9) and an in-app **changelog**.
+* Event alerts show on screen only (no sound, notification or email yet).
 * Developed and tested on **Ubuntu Linux**. The Windows and macOS code paths (for example *Set IP*) exist but have not
   been verified.
 * The live view shows the last ten minutes held in memory; permanent data come from the Shake's own archive.

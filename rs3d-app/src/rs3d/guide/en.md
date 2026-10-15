@@ -48,7 +48,18 @@ Three channels in real time. Choose the window (30 s, 60 s, 5 min), switch the 1
 
 The Shake keeps only **7 days**: download at least once a week.
 
-## 6. Clock
+## 6. Events
+
+RS3D can tell you when the ground shakes harder than usual. It uses the same STA/LTA trigger as rsudp: it compares a short average (STA, 6 s) with a long average (LTA, 30 s) of the vertical channel (EHZ) after a 0.8 to 9 Hz band-pass. When the ratio rises above **On** (3.95) an event starts; when it falls below **Reset** (0.9) it ends.
+
+- **Live page:** a red banner appears at once ("Event in progress…"), turns orange when the event ends, and stays until you press **Dismiss**. The chart shades the event and a short list shows the latest events.
+- **Data page:** after a download the days are scanned automatically. Events are shaded on the preview. **Rescan** runs the detector again with the current settings.
+- **Helicorder:** events are shaded on their rows. Click one to open the detail view.
+- **Settings → Events:** switch detection on or off and change channel, STA, LTA, On, Reset and the band-pass. Changes apply to the live detector at once and do not re-scan old data.
+
+The detector stays quiet for the first 30 seconds after start-up or after a gap in the data. When a downloaded day is scanned, the detector warms up on the 60 s before that day. Events are saved in `events.jsonl` in the data folder. Sound, desktop notification and email are planned.
+
+## 7. Clock
 
 The Shake keeps time with `ntpd`, from Internet servers over Wi-Fi, with the laptop (`169.254.8.11`) as a backup. Check on the Shake:
 

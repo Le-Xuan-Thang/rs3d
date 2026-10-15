@@ -5,8 +5,8 @@ Tools and documentation for a Raspberry Shake 3D seismograph (station R77A7).
 ## RS3D app
 
 [`rs3d-app/`](rs3d-app/) is a local web application (Python + NiceGUI) to check the Shake's health, watch the ground
-move live, download and inspect recorded days, and browse a 24-hour helicorder. It runs on your own laptop and works
-without Internet.
+move live with an on-screen event alert, download and inspect recorded days, and browse a 24-hour helicorder. It runs
+on your own laptop and works without Internet.
 
 ```bash
 cd rs3d-app
