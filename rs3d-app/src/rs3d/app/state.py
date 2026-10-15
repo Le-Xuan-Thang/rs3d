@@ -75,7 +75,7 @@ class AppState:
         self.events = EventStore(paths.events)
         self.event_open: tuple[float, float] | None = None  # (start, ratio) while an event is in progress
         self.event_last: Event | None = None  # last finished event; the banner shows it until dismissed
-        self.recent_events: deque[Event] = deque(reversed(self.events.latest(50)), maxlen=50)  # oldest first
+        self.recent_events: deque[Event] = deque(reversed([e for e in self.events.latest(50) if e.source == "live"]), maxlen=50)  # oldest first
         devices = self.registry.load()
         self.current_host: str | None = settings.get("current_host") or (devices[0].host if devices else None)
         self._live: dict[str, LiveStream] = {}

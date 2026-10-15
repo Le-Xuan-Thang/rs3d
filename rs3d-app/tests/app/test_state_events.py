@@ -201,3 +201,16 @@ def test_start_current_logs_failures(tmp_path, monkeypatch, caplog):
     monkeypatch.setattr(state, "live", boom)
     state.start_current()  # must not raise
     assert "no socket" in caplog.text
+
+
+def test_recent_events_seed_only_live_events(tmp_path):
+    from rs3d.core.events import Event
+    state = make(tmp_path)
+    state.events.append(Event(T0, T0 + 5, 5.0, 1.0, "EHZ", "live"))
+    state.events.append(Event(T0 + 100, T0 + 105, 5.0, 1.0, "EHZ", "scan"))
+    assert [e.source for e in make(tmp_path).recent_events] == ["live"]
+
+
+def test_found_label_reads_for_one():
+    from rs3d.app.strings import label
+    assert label("events.found").format(n=1) == "1 event(s)"

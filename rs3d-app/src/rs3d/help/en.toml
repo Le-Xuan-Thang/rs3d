@@ -160,7 +160,7 @@ latest = "Latest events"
 none = "No events yet."
 rescan = "Rescan"
 scanning = "scanning events…"
-found = "{n} events"
+found = "{n} event(s)"
 log_error = "Cannot write the event log ({error}). Events are shown but not saved."
 
 # ---------------------------------------------------------------- (?) texts
