@@ -21,6 +21,7 @@ rs3d-app = "rs3d.cli:main"
 
 [dependency-groups]
 dev = [
+    "playwright>=1.64.0",
     "pytest>=8.0",
 ]
 
@@ -33,5 +34,8 @@ packages = ["src/rs3d"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["device: needs a Raspberry Shake connected over Ethernet"]
-addopts = "-m 'not device'"
+markers = [
+    "device: needs a Raspberry Shake connected over Ethernet",
+    "e2e: drives the app in a real Chrome browser (slow)",
+]
+addopts = "-m 'not device and not e2e'"

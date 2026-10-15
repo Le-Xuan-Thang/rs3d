@@ -176,12 +176,12 @@ def register(state: AppState) -> None:
         for b in export_buttons:
             b.disable()
 
-        with ui.row().classes("items-center gap-2"):
-            ui.label(label("data.spectrogram")).classes("font-bold")
-            spec_channel = ui.select(list(channels), value=channels[0]).props("dense").classes("w-24")
         ui.label(label("data.health")).classes("font-bold")
         health_label = ui.label("—").classes("text-sm")
         health_gaps = ui.column().classes("gap-0 font-mono text-sm")
+        with ui.row().classes("items-center gap-2"):
+            ui.label(label("data.spectrogram")).classes("font-bold")
+            spec_channel = ui.select(list(channels), value=channels[0]).props("dense").classes("w-24")
         spec_chart = ui.echart({"series": []}).classes("w-full").style("height: 36vh")
         ui.label(label("data.psd")).classes("font-bold")
         psd_chart = ui.echart({"series": []}).classes("w-full").style("height: 28vh")

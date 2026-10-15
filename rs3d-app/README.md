@@ -40,5 +40,6 @@ Downloaded data is kept on the laptop in an SDS archive, so a range is only fetc
 
 ```bash
 uv run pytest              # unit and page tests, no device needed
+uv run pytest -m e2e       # real-browser test (needs Google Chrome)
 uv run pytest -m device    # extra tests that need a Shake on the network
 ```
