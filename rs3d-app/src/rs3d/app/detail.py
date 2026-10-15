@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import tempfile
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable
 
 from nicegui import run, ui
@@ -12,6 +14,7 @@ from rs3d.app import timeutil
 from rs3d.app.charts import set_stream_data, spectrogram_options, spectrum_options, waveform_options
 from rs3d.app.state import AppState
 from rs3d.app.strings import label
+from rs3d.core.export import clipboard_title, write_clipboard_png
 from rs3d.core.helicorder import load_window, shift_window, zoom_window
 from rs3d.core.response import cached_inventory, get_inventory
 from rs3d.core.spectro import amplitude_spectrum, spectrogram, window_for
@@ -76,7 +79,8 @@ class DetailPanel:
                     .tooltip(label("detail.later")).mark("detail-later")
                 self.toggle = ui.toggle({m: label(f"detail.{m}") for m in MODES}, value="waveform",
                                         on_change=self.set_mode).props("dense no-caps")
-                self.extra = ui.row().classes("items-center gap-1")  # the clipboard button goes here
+                ui.button(icon="content_paste", on_click=self.open_clipboard).props(
+                    "flat dense round data-testid=clipboard").tooltip(label("clipboard.title"))
                 ui.button(icon="close", on_click=self.close).props("flat dense round").mark("detail-close")
             self.message = ui.label("").classes("text-grey-7")
             self.chart = ui.echart({"series": []}).classes("w-full").style("height: 34vh")
@@ -126,6 +130,35 @@ class DetailPanel:
             ui.notify(str(exc), type="negative", multi_line=True)
             return
         self.draw()
+
+    def open_clipboard(self) -> None:
+        """Dialog with waveform, spectrogram and spectrum of the current window; the camera saves a PNG."""
+        if self.stream is None or self.window is None:
+            return
+        ctx, (a, b) = self.get_ctx(), self.window
+        st = self.stream.select(channel=ctx.channel)
+        with ui.dialog() as dialog, ui.card().classes("w-full max-w-6xl"):
+            with ui.row().classes("items-center w-full"):
+                ui.label(label("clipboard.title")).classes("text-lg font-bold")
+                ui.space()
+
+                async def save() -> None:
+                    title = clipboard_title(ctx.net, ctx.sta, ctx.loc, ctx.channel, a, b, ctx.units, ctx.band)
+                    name = f"{ctx.net}.{ctx.sta}.{ctx.channel}_{a.strftime('%Y%m%dT%H%M%S')}.png"
+                    out = Path(tempfile.mkdtemp()) / name
+                    await run.io_bound(write_clipboard_png, st, out, title, ctx.units)
+                    ui.download.file(out, out.name)
+
+                ui.button(icon="photo_camera", on_click=save).props("flat round data-testid=camera") \
+                    .tooltip(label("clipboard.camera"))
+                ui.button(icon="close", on_click=dialog.close).props("flat round")
+            for mode, height in (("waveform", "22vh"), ("spectrogram", "26vh"), ("spectra", "26vh")):
+                options = detail_chart_options(mode, st, ctx.channel, ctx.use_utc)
+                if options is None:
+                    ui.label(label("detail.no_window_data")).classes("text-grey-7")
+                    break
+                ui.echart(options).classes("w-full").style(f"height: {height}")
+        dialog.open()
 
     def draw(self) -> None:
         if self.window is None or self.stream is None:

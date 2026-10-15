@@ -104,6 +104,10 @@ earlier = "Earlier"
 later = "Later"
 no_window_data = "No data in this window."
 
+[labels.clipboard]
+title = "Waveform Clipboard"
+camera = "Save picture"
+
 [labels.preset]
 last_10_min = "Last 10 min"
 last_hour = "Last hour"

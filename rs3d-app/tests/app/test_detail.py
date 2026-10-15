@@ -39,3 +39,9 @@ def test_empty_window_or_other_channel_gives_none():
 def test_panel_message_for_a_window_with_no_data():
     empty = Stream([Trace(np.zeros(0), header={"channel": "EHZ", "sampling_rate": 100.0, "starttime": T0})])
     assert detail_chart_options("waveform", empty, "EHZ", True) is None
+
+
+def test_clipboard_panels_use_the_same_option_builders():
+    st = stream()
+    for mode, kind in (("waveform", "line"), ("spectrogram", "heatmap"), ("spectra", "line")):
+        assert detail_chart_options(mode, st, "EHZ", True)["series"][0]["type"] == kind
