@@ -87,7 +87,7 @@ class RingBuffer:
             return np.array([]), np.array([])
         t, v = np.concatenate(times), np.concatenate(values)
         if len(t) > max_points:
-            t, v = _minmax_decimate(t, v, max_points)
+            t, v = minmax_decimate(t, v, max_points)
         return t, v
 
 
@@ -101,7 +101,7 @@ def _bandpass(v: np.ndarray, rate: float, fmin: float, fmax: float) -> np.ndarra
     return sosfiltfilt(sos, v) if len(v) > padlen else v
 
 
-def _minmax_decimate(t: np.ndarray, v: np.ndarray, max_points: int) -> tuple[np.ndarray, np.ndarray]:
+def minmax_decimate(t: np.ndarray, v: np.ndarray, max_points: int) -> tuple[np.ndarray, np.ndarray]:
     """Keep min and max of each bin. Each contiguous segment (between NaN markers) is decimated
     on its own, so gaps survive."""
     breaks = np.flatnonzero(np.isnan(v))

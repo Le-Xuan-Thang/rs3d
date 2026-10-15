@@ -1,6 +1,7 @@
 """NiceGUI app used by the page smoke tests: real pages, fake device access."""
 
 import os
+import time
 from pathlib import Path
 
 import numpy as np
@@ -45,7 +46,8 @@ class FakeSource:
 state = AppState(AppPaths(Path(os.environ["RS3D_DATA_DIR"])), passwords=Passwords(MemoryKeyring()))
 state.save_device(Device(name="R77A7", host="169.254.221.62", station="R77A7"))
 state.checks = lambda device: [Check(i, Level.OK, f"fake {i}", i) for i in ORDER]
-_live = LiveStream(FakeSource, sleep=lambda s: None)
+# the fake source fails at once; without a pause the reconnect loop would spin and starve other tests
+_live = LiveStream(FakeSource, sleep=lambda s: time.sleep(0.2))
 state.live = lambda device: (_live.start(), _live)[1]
 build(state)
 ui.run(reload=False)
