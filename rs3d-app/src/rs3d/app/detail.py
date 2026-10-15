@@ -106,6 +106,7 @@ class DetailPanel:
         self.y_range: tuple[float, float] | None = None  # amplitude zoom set by box zoom
         self.box_on = False
         self.loaded: Loaded | None = None
+        self._drawn_mode = "waveform"
         self._latest = LatestOnly()
         with ui.card().classes("w-full") as self.card:
             with ui.row().classes("items-center gap-1"):
@@ -270,6 +271,12 @@ class DetailPanel:
         self.chart.set_visibility(True)
         self.chart.options.clear()
         self.chart.options.update(options)
-        self.chart.update()
+        if self._drawn_mode != self.mode:
+            # The chart merges option updates when the series count is unchanged, so components of the previous
+            # mode (for example the spectrogram's colour scale) would stay on screen: replace everything at once.
+            self.chart.run_chart_method("setOption", options, True)
+            self._drawn_mode = self.mode
+        else:
+            self.chart.update()
         if self.box_on:
             self.apply_cursor()  # a redraw resets the cursor

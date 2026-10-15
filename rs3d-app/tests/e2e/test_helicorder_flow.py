@@ -59,6 +59,12 @@ def test_click_a_row_and_save_the_clipboard(server, three_hours, tmp_path):  # n
                 layers = charts.nth(i).locator("canvas")
                 painted.append(max(layers.nth(j).evaluate(PAINTED) for j in range(layers.count())))
         assert len(painted) == 2 and all(n > 500 for n in painted), painted  # detail chart + helicorder
+        # going back to the waveform must not keep the spectrogram's colour scale (the chart merges option updates)
+        page.get_by_text("Waveform", exact=True).first.click()
+        page.wait_for_timeout(1200)
+        leftover = page.evaluate("() => (getElement(document.querySelector('.nicegui-echart').id.slice(1))"
+                                 ".chart.getOption().visualMap || []).length")
+        assert leftover == 0, "the spectrogram's visualMap is still on the waveform chart"
         # turning the band-pass on while the detail is open reloads it, and the title says so
         page.get_by_text("Band-pass", exact=True).first.click()
         page.locator(".font-mono").filter(has_text="band-pass 1–10 Hz").first.wait_for(timeout=15000)
