@@ -61,19 +61,17 @@ def test_archive_replaced_by_first_live_packet_not_extended():
     assert (d._lo["EHZ"][50], d._hi["EHZ"][50]) == (1, 1)
 
 
-def test_rows_shape_gaps_and_median():
+def test_rows_shape_cut_and_median():
     d = DayTrace(DAY)
-    d.add(trace([10, 10, 20, 20], T0 + 1790, rate=1.0))   # end of row 0: seconds 1790..1793 (all inside row 0)
-    d.add(trace([10, 12], T0 + 1800 + 4, rate=1.0))       # row 1: seconds 4, 5
+    d.add(trace([10, 10, 20, 20], T0 + 1790))      # seconds 1790..1793, the end of row 0
+    d.add(trace([10, 12], T0 + 1800 + 4))          # seconds 4 and 5 of row 1
     rows = d.rows("EHZ")
-    assert len(rows) == 48 and rows[0].start == UTCDateTime(T0)
-    assert rows[1].start == UTCDateTime(T0 + 1800)
-    assert len(rows[5].values) == 0                        # empty row
-    r0 = rows[0]
-    assert r0.seconds[0] == 1790 + 0.5 - 0.25 + 0.25 or True
-    assert np.isfinite(r0.values).sum() == len(r0.values) - np.isnan(r0.values).sum()
-    assert abs(np.nanmedian(r0.values)) < 1e-9
-    assert np.isnan(rows[1].values).any() is np.False_ or len(rows[1].values) > 0
+    assert len(rows) == 48 and rows[0].start == UTCDateTime(T0) and rows[1].start == UTCDateTime(T0 + 1800)
+    assert len(rows[5].values) == 0                # a row without data is empty
+    r0 = rows[0]                                   # cut to the data: starts at second 1790 (bin 895 of step 2)
+    assert r0.seconds[0] == 1790.5 and r0.seconds[-1] == 1793.5 and len(r0.values) == 4
+    assert abs(np.median(r0.values)) < 1e-9
+    assert len(rows[1].values) == 2 and rows[1].seconds[0] == 4.5
 
 
 def test_rows_break_the_line_on_a_gap():
