@@ -1,0 +1,83 @@
+\chapter{Data quality: gaps and completeness}\label{ch:quality}
+
+A seismograph is only useful while it is recording. The application measures and displays three aspects of
+\emph{data availability}: what is on the laptop and what is still on the Shake (the coverage bar), what is missing
+inside the selected window (Data health), and whether the Shake's clock can be trusted (Chapter~\ref{ch:data}).
+
+\section{Samples, spans and gaps}
+A trace is a set of samples at times $t_i=t_0+i/\fs$. Records and traces end where a gap begins, so the whole day is a
+list of \emph{spans} $[s_j,e_j)$, where $e_j$ is the time just after the last sample of the span, $e_j=s_j+N_j/\fs$. Two
+spans are \emph{contiguous} when the hole between them is at most half a sample, which absorbs timing rounding;
+contiguous spans are merged. What counts as a gap depends on who is asking, so the application uses three tolerances.
+
+\begin{table}[tbp]
+\centering\small
+\caption{Gap tolerances used by different parts of the application.}\label{tab:tol}
+\begin{tabular}{@{}L{0.34\linewidth}cL{0.46\linewidth}@{}}
+\toprule
+Use & Tolerance & Rule\\ \midrule
+Coverage bar (\file{core/coverage.py}) & $0.5/\fs$ & spans closer than half a sample are merged into one\\
+Data health (\file{core/health.py}) & $0.5/\fs$ & same rule, applied per channel\\
+Helicorder rows (\file{core/helicorder.py}) & $1.5/\fs$ & a break is drawn only when the hole exceeds one and a
+  half sample intervals\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Completeness}
+For a selection $[a,b)$ with $\Tsel=b-a$ the application computes, for every channel, the set of times with data (the union
+of its clipped spans) and from it the set of times \emph{missing} on that channel. The \emph{gaps} of the selection are the
+union, over channels, of the missing sets: a moment counts as a gap if \emph{any} selected channel has no data. The
+\emph{completeness} is
+\begin{equation}\label{eq:complete}
+  C = 1-\frac{\sum_g (e_g - s_g)}{\Tsel}, \qquad 0\le C\le1,
+\end{equation}
+where the sum runs over the gaps $g$ of the union. If no channel has any data in the selection there is one gap equal to
+the whole selection and $C=0$. \Cref{fig:gaps} illustrates the construction.
+
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[x=0.078\linewidth,y=1cm]
+  \foreach \y/\lab/\spans in {2.4/EHZ/{0/3.2, 4.0/10},1.6/EHN/{0/10},0.8/EHE/{0/6.1, 6.7/10}} {
+    \node[left,font=\small\sffamily] at (-0.15,\y) {\lab};
+    \foreach \a/\b in \spans { \fill[rs3dblue!70] (\a,\y-0.22) rectangle (\b,\y+0.22); }
+  }
+  \node[left,font=\small\sffamily] at (-0.15,0) {union};
+  \fill[rs3dred!70] (3.2,-0.22) rectangle (4.0,0.22);
+  \fill[rs3dred!70] (6.1,-0.22) rectangle (6.7,0.22);
+  \draw[rs3dgrey] (0,-0.6) -- (10,-0.6);
+  \foreach \x/\t in {0/$a$,10/$b$} {\draw[rs3dgrey] (\x,-0.5) -- (\x,-0.7); \node[below,font=\small] at (\x,-0.7) {\t};}
+  \node[font=\small,rs3dred!80!black,above] at (3.6,0.25) {$g_1$};
+  \node[font=\small,rs3dred!80!black,above] at (6.4,0.25) {$g_2$};
+  \draw[decorate,decoration={brace,amplitude=3pt,mirror},rs3dgrey] (0,-1.15) -- (10,-1.15)
+    node[midway,below=3pt,font=\small] {$\Tsel$};
+\end{tikzpicture}
+\caption{Completeness of a selection. Each channel has its own holes; the gaps of the selection ($g_1$, $g_2$) are the
+union of all of them, and $C=1-(|g_1|+|g_2|)/\Tsel$. In this sketch $C = 1-(0.8+0.6)/10 = 86\,\%$.}\label{fig:gaps}
+\end{figure}
+
+\begin{rs3dapp}
+\code{health(stream, start, end)} in \file{core/health.py} returns the completeness and the list of gaps, each as a
+pair of times; the Data page prints it as a percentage and lists up to 50 gaps with their durations in the chosen
+time zone. The leading and trailing holes of a selection (data starting after $a$ or ending before $b$) are gaps like
+any other.
+\end{rs3dapp}
+
+\section{Coverage: laptop, Shake, or nothing}
+The coverage bar above the Data page's preview classifies every instant of a view into three states:
+\emph{local} (the samples are on the laptop), \emph{remote} (the day exists on the Shake but is not downloaded) and
+\emph{gap} (no data anywhere). The rule, evaluated per segment between cut points at midnight and at span edges, is:
+\begin{enumerate}
+\item if the midpoint of the segment lies inside a local span, the state is local;
+\item otherwise, if that day exists on the Shake \emph{and} the laptop does not have the day file, or the day is the newest day
+  on the Shake (still being written), the state is remote;
+\item otherwise it is a gap.
+\end{enumerate}
+The ``newest day'' exception is why today's file is always offered for download again: the Shake appends to it
+continuously, so a copy made earlier is incomplete.
+
+\section{Why a gap is never filled}
+Interpolating across a gap would be easy and would make plots prettier, but it would manufacture data. RS3D keeps gaps as
+gaps in every stage: separate traces on loading, separate filter runs, \code{NaN} separators in the plotted lines, blank
+spectrogram columns, and an explicit completeness figure. When a gap is shorter than the window of an operation, that
+operation excludes the window rather than guessing its content.

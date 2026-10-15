@@ -1,0 +1,77 @@
+\chapter*{Preface}
+\addcontentsline{toc}{chapter}{Preface}
+
+RS3D is an application for the Raspberry Shake 3D seismograph. Its \emph{User's Guide} explains how to use it;
+this manual explains \emph{why it works}. It documents, one function at a time, the signal-processing theory that the
+application relies on, how that theory was turned into code, and where the code deliberately or unavoidably departs
+from the textbook version.
+
+The manual is written for three kinds of reader: an observer who wants to trust (or question) what a spectrogram or an
+alert is telling them, a student who wants a worked example of applied seismological signal processing, and a developer
+who is about to change one of the algorithms and needs the assumptions written down.
+
+\paragraph{What is new here, and what is not.}
+Nothing in this manual is new science. Every method (Butterworth filtering, Welch spectra, short-time Fourier analysis,
+the STA/LTA trigger) is standard and is cited. What the manual adds is precision about \emph{this} implementation:
+the exact windows, constants, tolerances and edge-case rules, each traceable to a source file of the application.
+
+\paragraph{How the chapters are organised.}
+Chapters follow the path of a sample through the application, from the sensor (Chapters~\ref{ch:data}
+and~\ref{ch:response}) through filtering and spectral analysis (Chapters~\ref{ch:filter}--\ref{ch:noise}) and data
+quality (Chapter~\ref{ch:quality}) to visualisation, detection and real-time handling
+(Chapters~\ref{ch:vis}--\ref{ch:realtime}). Chapter~\ref{ch:arch} describes how the code is organised, and the
+appendices collect derivations and every numerical constant used by the application.
+
+\begin{rs3dkey}[How to read the boxes]
+\textbf{Key idea} boxes state a result in one or two sentences.\par\smallskip
+\textbf{In RS3D} boxes say exactly what the application does, naming the source file (paths are relative to
+\file{rs3d-app/src/rs3d/}). Where the application departs from the textbook method this is stated there, never
+left implicit.
+\end{rs3dkey}
+
+\paragraph{Reproducibility.}
+Every plot is produced by one script, \file{make\_figures.py}, which calls the application's own
+functions (not re-implementations) on a seeded synthetic recording of one day at a fictitious station
+(\file{AM.DEMO1.00}). The recording contains a local earthquake, a distant earthquake, two man-made noise bursts and two
+data gaps, so each algorithm can be shown on a case whose true answer is known.
+
+\paragraph{Status of the alert chapter.}
+The event-detection theory of Chapter~\ref{ch:detect} is complete. The design of the application's alert pipeline in
+Section~\ref{sec:alertdesign} is a \emph{design proposal}: that feature is not yet implemented, and the proposal
+will be revised when it is.
+
+\paragraph{Verification of references.}
+Two of the key references (Trnkoczy 2012 and McNamara and Buland 2004) were checked against online bibliographic
+records while this edition was written. The remaining entries are well-known works cited from the authors'
+knowledge; their volume and page numbers should be confirmed against the originals before the references are
+reused in a formal publication. The description of rsudp's alert defaults in Chapter~\ref{ch:detect} is deliberately
+hedged for the same reason: no authoritative list of defaults could be located.
+
+\bigskip
+\begin{center}\small\textsf{\textcolor{rs3dgrey}{RS3D project, October 2026}}\end{center}
+
+\chapter*{Notation}
+\addcontentsline{toc}{chapter}{Notation}
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}l X l@{}}
+\toprule
+Symbol & Meaning & Unit\\ \midrule
+$x(t),\;x[n]$ & continuous signal; its samples $x[n]=x(n\,\dt)$ & counts or m/s\\
+$\fs,\;\dt$ & sampling frequency, sampling interval $\dt = 1/\fs$ & Hz, s\\
+$\fN$ & Nyquist frequency, $\fN=\fs/2$ & Hz\\
+$N$ & number of samples in a window or record & --\\
+$T$ & duration $T=N\,\dt$ & s\\
+$X[k]$ & discrete Fourier transform of $x[n]$ & counts\\
+$f_k$ & frequency of bin $k$, $f_k = k\,\fs/N$ & Hz\\
+$\df$ & frequency resolution (bin spacing) $\df=\fs/N=1/T$ & Hz\\
+$w[n]$ & window (taper) function & --\\
+$H(f)$ & transfer function of a filter & --\\
+$T(f)$ & instrument response, counts per unit of ground velocity & counts/(m/s)\\
+$S_{xx}(f)$ & one-sided power spectral density & counts$^2$/Hz\\
+$\mathrm{STA},\mathrm{LTA}$ & short- and long-term averages & counts$^2$\\
+$R$ & STA/LTA ratio & --\\
+$\jj$ & imaginary unit & --\\
+\bottomrule
+\end{tabularx}
+\end{center}

@@ -1,0 +1,82 @@
+\chapter{Real-time data handling}\label{ch:realtime}
+
+The Live page and the future alert service both consume a continuous stream. This chapter describes how that stream is
+received, buffered and kept alive, and how the other path, the download of day files, works.
+
+\section{SeedLink}
+SeedLink is a protocol for distributing seismic data over TCP. A client connects to the server (on a Shake, port~18000),
+asks which stations and streams it offers (\code{INFO STREAMS}), selects the channels it wants, and then simply
+receives miniSEED records as they are completed by the digitiser. The application uses ObsPy's
+\code{EasySeedLinkClient} for the protocol.
+
+\begin{rs3dapp}
+\file{core/seedlink.py} first \emph{probes} the Shake (connect, parse the XML answer of \code{INFO STREAMS}, disconnect)
+to learn the network, station, location and channel names, which is what the Status page and \ui{Find Shake} use. The
+streaming class \code{SeedLinkSource} then selects \code{EHZ}, \code{EHN} and \code{EHE}. ObsPy reconnects by itself
+inside its collect loop, but its defaults (120~s idle timeout, 30~s delay) are far too slow for a live display, so the
+application lowers them to a 10~s network timeout and a 2~s delay. One workaround is documented in the source: the
+client is created with \code{autoconnect=False} and connected manually, because ObsPy~1.5.1 crashes when a timeout is
+set after an automatic connection.
+\end{rs3dapp}
+
+\section{The ring buffer}
+Incoming records are appended to a \emph{ring buffer} that holds the most recent 10~minutes per channel. Records arrive
+in short pieces (typically a few seconds each); the buffer stores each channel as a list of \emph{contiguous chunks}:
+a new piece is appended to the last chunk when it continues it exactly (same sampling rate, start within half a
+sample interval of the previous end) and otherwise starts a new chunk, so every chunk is gap-free by construction.
+Chunks that end more than 600~s before the newest data are discarded. All access is guarded by a lock, because
+the receiving thread writes while the display thread reads.
+
+To draw, the display asks for a \emph{snapshot}: the samples of one channel in the window $[t_e-W,\,t_e]$, where $t_e$
+is the newest time and $W$ the chosen window (30~s to 10~min). The snapshot is assembled from the chunks, with a
+\code{NaN} separator between chunks so that gaps stay visible. If a band-pass is requested it is applied to each chunk on
+its own (Chapter~\ref{ch:filter}); then, if more than 1500 points remain, min/max decimation (Chapter~\ref{ch:vis})
+reduces them. The page redraws every 0.25~s, and \ui{Pause} freezes the picture while the buffer continues to fill.
+
+\section{Keeping the link alive}
+Networks fail: a cable is unplugged, a Shake restarts. The streaming thread therefore runs a small state machine
+(\cref{fig:reconnect}). It starts in \emph{connecting}; when the first record arrives it is \emph{live}; when the
+connection ends or fails it waits and tries again in \emph{reconnecting}. The wait grows with each consecutive failure along the
+sequence
+\begin{equation}
+  \text{back-off} = 2,\ 4,\ 8,\ 16,\ 30\ \text{seconds}\quad(\text{then 30 s}),
+\end{equation}
+so a Shake that is off for an hour is not polled every two seconds, and the sequence restarts at 2~s as soon as a connection
+has delivered data. A second condition covers the case where the TCP connection survives but data stop: if no record
+has arrived for 5~seconds while the state is \emph{live}, the page shows \emph{waiting for data}. When a connection
+error is the reason, the reason text (for example \emph{connection refused}) is shown next to \emph{reconnecting}.
+
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[every node/.style={font=\small\sffamily}]
+  \node[box] (stop) at (0,0) {stopped};
+  \node[box] (conn) at (4.2,0) {connecting};
+  \node[boxblue] (live) at (10.6,0) {live};
+  \node[box,fill=rs3damber!20,draw=rs3damber] (rec) at (6.6,-2.3) {reconnecting};
+  \draw[flow] (stop) -- node[above]{start} (conn);
+  \draw[flow] (conn) -- node[above]{first record} (live);
+  \draw[flow] (conn.south) -- ++(0,-0.6) |- node[pos=0.25,left]{error} (rec.west);
+  \draw[flow] (live.south) -- ++(0,-0.6) |- node[pos=0.25,right]{link lost} (rec.east);
+  \draw[flow] (rec.north) -- node[right,pos=0.5,align=left]{wait 2, 4, 8, 16, 30~s,\\then retry} (6.6,-0.9) -| (conn.south east);
+  \draw[flow,dashed] (live.north west) to[out=110,in=70,looseness=7] node[above=1pt]{no data for 5~s: ``waiting''} (live.north east);
+\end{tikzpicture}
+\caption{States of the live connection. The back-off sequence resets when a connection has delivered data.}\label{fig:reconnect}
+\end{figure}
+
+\begin{rs3dapp}
+\code{RingBuffer}, \code{LiveStream} and the constants \code{BACKOFF}$=(2,4,8,16,30)$ are in \file{core/live.py}; the
+display loop is in \file{app/pages/live.py}. Data are not persisted by the live path: the Live page shows what the buffer
+holds; permanent data come from the Shake's own archive through the Data page.
+\end{rs3dapp}
+
+\section{Downloading the archive}
+The Shake writes its own SDS archive. The application copies day files with SFTP over the same SSH login that the Status
+page uses. For each selected channel it lists the remote days, compares them with the days already on the laptop, and fetches
+the missing ones \emph{plus the newest remote day}, which is still growing. A file is first written as
+\file{<name>.part} and renamed when complete, so a transfer cut by a cable fault leaves no corrupt day file. Reading
+is read-only on the Shake; the application never modifies it.
+
+\section{Latency}
+The delay between ground motion and the picture has three parts: the digitiser must complete a record before sending
+it (a few seconds), the network adds milliseconds on a direct cable, and the page refreshes every 0.25~s. A practical
+latency of a few seconds is therefore expected, and is set by the record length, not by the application's processing.

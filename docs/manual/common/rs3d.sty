@@ -1,0 +1,142 @@
+% rs3d.sty -- shared style of the RS3D manuals (XeLaTeX, run with -shell-escape for minted)
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{rs3d}[2026/10/15 RS3D manual style]
+
+% ------------------------------------------------------------------ fonts and language
+\RequirePackage[english]{babel}
+\RequirePackage{amsmath,mathtools}
+\RequirePackage{fontspec}
+\RequirePackage{unicode-math}
+\setmainfont{TeX Gyre Pagella}
+\setsansfont{TeX Gyre Heros}[Scale=MatchLowercase]
+\setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
+\setmathfont{TeX Gyre Pagella Math}
+\RequirePackage[protrusion=true]{microtype}
+\RequirePackage{csquotes}
+
+% ------------------------------------------------------------------ colours (the app's own palette)
+\RequirePackage[dvipsnames,svgnames]{xcolor}
+\definecolor{rs3dblue}{HTML}{2F6FDE}     % app primary colour
+\definecolor{rs3ddark}{HTML}{263238}
+\definecolor{rs3dgrey}{HTML}{607D8B}
+\definecolor{rs3dlight}{HTML}{ECEFF1}
+\definecolor{rs3dgreen}{HTML}{2E9E4F}    % coverage: on this laptop
+\definecolor{rs3dred}{HTML}{D23C3C}      % coverage: gap
+\definecolor{rs3dpink}{HTML}{EC407A}     % helicorder: second row colour
+\definecolor{rs3damber}{HTML}{F9A825}
+
+% ------------------------------------------------------------------ layout helpers
+\RequirePackage{graphicx,booktabs,tabularx,longtable,multirow,array,makecell}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\RequirePackage{enumitem}
+\setlist{itemsep=0.2em,topsep=0.4em}
+\RequirePackage[font=small,labelfont={bf,color=rs3dblue},format=hang]{caption}
+\RequirePackage{subcaption}
+\RequirePackage{float}
+\floatplacement{figure}{tbp}
+\floatplacement{table}{tbp}
+\RequirePackage{bm}
+\RequirePackage{siunitx}
+\sisetup{detect-all,per-mode=symbol,group-separator={\,},group-minimum-digits=4}
+\DeclareSIUnit\count{counts}
+\RequirePackage{nicematrix}
+
+% ------------------------------------------------------------------ TikZ and plots
+\RequirePackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,shapes.misc,calc,fit,backgrounds,
+  decorations.pathreplacing,decorations.pathmorphing,patterns}
+\RequirePackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{fillbetween}
+\tikzset{
+  box/.style={draw=rs3dgrey,fill=rs3dlight,rounded corners=2pt,minimum height=7mm,align=center,
+              inner sep=4pt,font=\small\sffamily},
+  boxblue/.style={box,draw=rs3dblue,fill=rs3dblue!10},
+  boxdark/.style={box,draw=rs3ddark,fill=rs3ddark,text=white},
+  flow/.style={-{Stealth[length=2.2mm]},thick,color=rs3dgrey},
+}
+
+% ------------------------------------------------------------------ callout boxes
+\RequirePackage[most]{tcolorbox}
+\newtcolorbox{rs3dnote}[1][Note]{enhanced,breakable,colback=rs3dblue!6,colframe=rs3dblue,
+  boxrule=0pt,leftrule=2.5pt,arc=0pt,fonttitle=\bfseries\sffamily\small,title=#1,
+  coltitle=rs3dblue,colbacktitle=rs3dblue!6,attach boxed title to top left={yshift=-2mm},
+  boxed title style={boxrule=0pt,arc=0pt,colback=rs3dblue!6},before skip=8pt,after skip=8pt}
+\newtcolorbox{rs3dwarn}[1][Warning]{enhanced,breakable,colback=rs3damber!12,colframe=rs3damber!85!black,
+  boxrule=0pt,leftrule=2.5pt,arc=0pt,fonttitle=\bfseries\sffamily\small,title=#1,
+  coltitle=rs3damber!55!black,colbacktitle=rs3damber!12,attach boxed title to top left={yshift=-2mm},
+  boxed title style={boxrule=0pt,arc=0pt,colback=rs3damber!12},before skip=8pt,after skip=8pt}
+\newtcolorbox{rs3dtip}[1][Tip]{enhanced,breakable,colback=rs3dgreen!7,colframe=rs3dgreen,
+  boxrule=0pt,leftrule=2.5pt,arc=0pt,fonttitle=\bfseries\sffamily\small,title=#1,
+  coltitle=rs3dgreen!70!black,colbacktitle=rs3dgreen!7,attach boxed title to top left={yshift=-2mm},
+  boxed title style={boxrule=0pt,arc=0pt,colback=rs3dgreen!7},before skip=8pt,after skip=8pt}
+% theory: key idea / in the app
+\newtcolorbox{rs3dkey}[1][Key idea]{enhanced,breakable,colback=white,colframe=rs3ddark,boxrule=0.6pt,
+  arc=1pt,fonttitle=\bfseries\sffamily\small,title=#1,colbacktitle=rs3ddark,coltitle=white,
+  before skip=8pt,after skip=8pt}
+\newtcolorbox{rs3dapp}[1][In RS3D]{enhanced,breakable,colback=rs3dlight,colframe=rs3dblue!70,
+  boxrule=0.6pt,arc=1pt,fonttitle=\bfseries\sffamily\small,title=#1,colbacktitle=rs3dblue!70,coltitle=white,
+  before skip=8pt,after skip=8pt}
+
+% ------------------------------------------------------------------ code (minted + inline helpers)
+\RequirePackage{minted2}  % legacy minted: calls pygmentize directly (minted 3 needs latexminted)
+\setminted{fontsize=\footnotesize,breaklines,autogobble,frame=lines,framerule=0.4pt,
+  rulecolor=rs3dgrey,bgcolor=rs3dlight!60,baselinestretch=1.05,tabsize=4}
+\setminted[bash]{breaksymbolleft={}}
+\renewcommand\theFancyVerbLine{\sffamily\tiny\textcolor{rs3dgrey}{\arabic{FancyVerbLine}}}
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\file}[1]{\texttt{\small #1}}
+\newcommand{\ui}[1]{\textsf{\textbf{#1}}}          % a button, page or label as shown in the app
+\newcommand{\key}[1]{\tikz[baseline=(k.base)]\node[draw=rs3dgrey,rounded corners=1.5pt,inner sep=1.5pt,
+  font=\footnotesize\sffamily,fill=white] (k) {#1};}
+\newcommand{\menu}[1]{\textsf{#1}}
+
+% ------------------------------------------------------------------ links
+\RequirePackage[colorlinks=true,linkcolor=rs3dblue,citecolor=rs3dblue,urlcolor=rs3dblue,
+  pdfusetitle,bookmarksnumbered=true]{hyperref}
+\RequirePackage{xurl}
+\RequirePackage[nameinlink,noabbrev]{cleveref}
+
+% ------------------------------------------------------------------ headings, headers, footers (KOMA-Script)
+\RequirePackage{scrlayer-scrpage}
+\addtokomafont{disposition}{\sffamily\color{rs3ddark}}
+\addtokomafont{chapter}{\color{rs3dblue}}
+\setkomafont{pageheadfoot}{\sffamily\footnotesize\color{rs3dgrey}}
+\setkomafont{pagenumber}{\sffamily\footnotesize\color{rs3dgrey}}
+\automark[section]{chapter}
+\newcommand{\manualheader}[1]{%
+  \pagestyle{scrheadings}\clearpairofpagestyles
+  \ihead{\leftmark}\ohead{#1}\cfoot{\pagemark}%
+  \renewcommand*{\chapterpagestyle}{plain.scrheadings}}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+
+% ------------------------------------------------------------------ cover page
+\input{cover_trace.tex}
+\newcommand{\manualcover}[4]{% title, subtitle, version line, audience line
+  \begin{titlepage}
+  \thispagestyle{empty}
+  \begin{tikzpicture}[remember picture,overlay]
+    \fill[rs3ddark] (current page.north west) rectangle ([yshift=-11.5cm]current page.north east);
+    % a stylised seismogram across the band (coordinates from cover_trace.tex)
+    \begin{scope}[shift={(current page.north west)},yshift=-8.2cm]
+      \draw[rs3dblue!40,line width=0.3pt] (0,0) -- (21,0);
+      \draw[rs3dblue!85,line width=0.6pt] plot coordinates {\covertrace};
+    \end{scope}
+    \node[anchor=north west,text=white,font=\sffamily\bfseries\fontsize{40}{44}\selectfont]
+          at ([xshift=2.5cm,yshift=-3.0cm]current page.north west) {RS3D};
+    \node[anchor=north west,text=rs3dblue!35,font=\sffamily\large]
+          at ([xshift=2.5cm,yshift=-4.9cm]current page.north west) {Raspberry Shake 3D};
+    \node[anchor=north west,text=rs3ddark,font=\sffamily\bfseries\fontsize{26}{30}\selectfont,
+          text width=15.5cm,align=left]
+          at ([xshift=2.5cm,yshift=-13.0cm]current page.north west) {#1};
+    \node[anchor=north west,text=rs3dgrey,font=\sffamily\Large,text width=15.5cm,align=left]
+          at ([xshift=2.5cm,yshift=-16.0cm]current page.north west) {#2};
+    \draw[rs3dblue,line width=1.2pt] ([xshift=2.5cm,yshift=5.0cm]current page.south west) -- ++(3cm,0);
+    \node[anchor=south west,text=rs3ddark,font=\sffamily\large,text width=15.5cm,align=left]
+          at ([xshift=2.5cm,yshift=3.2cm]current page.south west) {#3};
+    \node[anchor=south west,text=rs3dgrey,font=\sffamily\small,text width=15.5cm,align=left]
+          at ([xshift=2.5cm,yshift=2.2cm]current page.south west) {#4};
+  \end{tikzpicture}
+  \null
+  \end{titlepage}}

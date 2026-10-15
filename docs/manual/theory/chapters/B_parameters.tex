@@ -1,0 +1,72 @@
+\chapter{Parameter reference}\label{app:params}
+
+Every numerical constant that shapes a result, with the file in which it is set (relative to \file{rs3d-app/src/rs3d/}).
+\Cref{tab:paramA} covers acquisition and conditioning, \cref{tab:paramB} analysis and display, and \cref{tab:paramC}
+the health checks.
+
+\begin{table}[tbp]
+\centering\small
+\caption{Acquisition, buffering and conditioning.}\label{tab:paramA}
+\begin{tabular}{@{}L{0.40\linewidth}L{0.27\linewidth}L{0.25\linewidth}@{}}
+\toprule
+Quantity & Value & File\\ \midrule
+Sampling rate (RS3D) & 100~Hz & device\\
+SeedLink port & 18000 & \file{core/models.py}\\
+SeedLink network timeout / delay & 10~s / 2~s & \file{core/seedlink.py}\\
+Ring buffer length & 600~s & \file{core/live.py}\\
+Reconnect back-off & 2, 4, 8, 16, 30~s & \file{core/live.py}\\
+Stale-data warning & 5~s & \file{core/live.py}\\
+Live refresh interval & 0.25~s & \file{app/pages/live.py}\\
+Live windows & 30, 60, 300, 600~s & \file{app/pages/live.py}\\
+Live decimation limit & 1500 points & \file{app/pages/live.py}\\
+Live band-pass default / order & 1--10~Hz / 2 (padded forward--backward) & \file{app/pages/live.py}, \file{core/live.py}\\
+Live upper-corner limit & $0.45\,\fs$ & \file{core/live.py}\\
+Export band-pass & Butterworth order 4, two passes, demeaned & \file{core/export.py}\\
+Response removal & ObsPy defaults: water level 60~dB, 5\,\% taper & \file{core/export.py}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[tbp]
+\centering\small
+\caption{Spectral analysis, helicorder and detail view.}\label{tab:paramB}
+\begin{tabular}{@{}L{0.40\linewidth}L{0.27\linewidth}L{0.25\linewidth}@{}}
+\toprule
+Quantity & Value & File\\ \midrule
+Amplitude-spectrum window & Hann, scale $2/\sum w$ & \file{core/spectro.py}\\
+Minimum samples for a spectrum & 8 & \file{core/spectro.py}\\
+Spectrogram window & SciPy default Tukey ($\alpha=0.25$) & \file{core/spectro.py}\\
+Spectrogram overlap & 50\,\% & \file{core/spectro.py}\\
+Window-length rule & $T/360$, limited to 1--600~s & \file{core/spectro.py}\\
+Noise-spectrum percentiles & 10, 50, 90 & \file{core/spectro.py}\\
+Spectrogram heat-map size & at most $400\times200$ cells & \file{app/charts.py}\\
+Spectrogram colour range & 2nd--98th percentile & \file{app/charts.py}\\
+Data-page waveform thinning & stride to about 4000 points & \file{app/charts.py}\\
+Helicorder row length / rows & 30~min / 48 & \file{core/helicorder.py}\\
+Points per helicorder row & 3000 & \file{core/helicorder.py}\\
+Helicorder amplitude scale & $2P_{99}/F$, $F\in\{0.5,1,2,4,8\}$ & \file{core/helicorder.py}\\
+Helicorder row height / click grid & 14~px / every 10~s & \file{app/charts.py}\\
+Detail window, default & 120~s & \file{app/detail.py}\\
+Detail window limits & 5~s -- 3600~s & \file{core/helicorder.py}\\
+Zoom factors / shift & $\times2$, $\times\tfrac12$ / $\pm\tfrac12$ span & \file{core/helicorder.py}\\
+Box-zoom amplitude rounding & 4 significant figures & \file{app/detail.py}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[tbp]
+\centering\small
+\caption{Data health and Shake checks.}\label{tab:paramC}
+\begin{tabular}{@{}L{0.40\linewidth}L{0.27\linewidth}L{0.25\linewidth}@{}}
+\toprule
+Quantity & Value & File\\ \midrule
+Gap merge tolerance (coverage, health) & $0.5/\fs$ & \file{core/coverage.py}, \file{core/health.py}\\
+Helicorder gap break & $1.5/\fs$ & \file{core/helicorder.py}\\
+Gaps listed on the Data page & at most 50 & \file{app/pages/data.py}\\
+Clock offset: warning / error & $>100$~ms / $>1000$~ms & \file{core/status.py}\\
+Free storage warning & $<10\,\%$ & \file{core/status.py}\\
+Link-local address range & 169.254.0.0/16 & \file{core/netcheck.py}\\
+Archive: day at risk & not downloaded and within one day of the retention limit & \file{core/status.py}\\
+\bottomrule
+\end{tabular}
+\end{table}

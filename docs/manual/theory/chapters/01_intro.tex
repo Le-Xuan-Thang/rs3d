@@ -1,0 +1,81 @@
+\chapter{Introduction}\label{ch:intro}
+
+\section{What the application does}
+RS3D reads the three-component ground-velocity signal of a Raspberry Shake 3D, keeps it on the laptop, and turns it
+into pictures and numbers an observer can act on. Seen from the signal-processing side its work divides into five
+tasks:
+
+\begin{enumerate}
+\item \textbf{Acquire}: receive samples in real time (SeedLink) and copy the Shake's day files (SFTP).
+\item \textbf{Condition}: convert counts to ground velocity and remove unwanted frequencies.
+\item \textbf{Analyse}: estimate spectra, spectrograms and a noise summary; measure data completeness.
+\item \textbf{Display}: reduce millions of samples to a few thousand points per plot without losing what matters.
+\item \textbf{Detect}: decide, sample by sample, whether the ground is moving more than usual (alerts).
+\end{enumerate}
+
+\begin{figure}[tbp]
+\centering
+\resizebox{\linewidth}{!}{\begin{tikzpicture}[every node/.style={minimum width=2.45cm,minimum height=9mm}]
+  \node[boxdark] (shake) at (0,0) {Raspberry Shake 3D\\[-1pt]{\scriptsize 3 geophones, 100 Hz}};
+  \node[boxblue] (sl)    at (3.9,1.2)  {SeedLink\\[-1pt]{\scriptsize live, TCP 18000}};
+  \node[boxblue] (sftp)  at (3.9,-1.2) {SFTP\\[-1pt]{\scriptsize day files}};
+  \node[box]     (ring)  at (6.9,1.2)  {ring buffer\\[-1pt]{\scriptsize 10 minutes}};
+  \node[box]     (store) at (6.9,-1.2) {local archive\\[-1pt]{\scriptsize SDS miniSEED}};
+  \node[boxblue] (live)  at (9.9,1.2)  {Live view};
+  \node[box,dashed] (alert) at (9.9,2.8) {alerts\\[-1pt]{\scriptsize STA/LTA (planned)}};
+  \node[box]     (proc)  at (9.9,-1.2) {conditioning\\[-1pt]{\scriptsize units, band-pass}};
+  \node[boxblue] (an)    at (12.9,-0.2) {spectrogram\\[-1pt]{\scriptsize noise, health}};
+  \node[boxblue] (heli)  at (12.9,-2.2) {helicorder\\[-1pt]{\scriptsize detail, clipboard}};
+  \draw[flow] (shake.east) -- ++(0.3,0) |- (sl.west);
+  \draw[flow] (shake.east) -- ++(0.3,0) |- (sftp.west);
+  \draw[flow] (sl) -- (ring);
+  \draw[flow] (sftp) -- (store);
+  \draw[flow] (ring) -- (live);
+  \draw[flow,dashed] (ring.north) -- ++(0,1.6) -- (alert.west);
+  \draw[flow] (store) -- (proc);
+  \draw[flow] (proc.east) -- ++(0.35,0) |- (an.west);
+  \draw[flow] (proc.east) -- ++(0.35,0) |- (heli.west);
+\end{tikzpicture}}
+\caption{Data flow of RS3D. Solid boxes exist today; the dashed alert stage is designed in
+Section~\ref{sec:alertdesign}.}\label{fig:flow}
+\end{figure}
+
+\section{Where each feature is explained}
+\Cref{tab:map} links every function a user can see to the chapter that derives it.
+
+\begin{table}[tbp]
+\centering\small
+\caption{Application features and the chapters that explain them.}\label{tab:map}
+\begin{tabularx}{\linewidth}{@{}l X l@{}}
+\toprule
+Feature & Theory used & Chapter\\ \midrule
+Counts / m/s switch & instrument response, deconvolution & \ref{ch:response}\\
+Band-pass (Data, Live, Helicorder) & Butterworth, zero-phase filtering & \ref{ch:filter}\\
+Spectra mode, clipboard spectrum & discrete Fourier transform, windows & \ref{ch:spectral}\\
+Spectrogram & short-time Fourier transform & \ref{ch:spectrogram}\\
+Noise spectrum & percentile summary of spectra & \ref{ch:noise}\\
+Coverage bar, Data health & gaps, completeness & \ref{ch:quality}\\
+Live and helicorder traces, click-to-time & min/max decimation, row geometry & \ref{ch:vis}\\
+Alerts & STA/LTA trigger & \ref{ch:detect}\\
+Live link, reconnection & SeedLink, buffering, back-off & \ref{ch:realtime}\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Conventions}
+\paragraph{Time.} All data are stored and processed in UTC. The application can \emph{display} times in the
+laptop's local zone, but that only changes labels; no sample is shifted. Times inside the code are epoch seconds
+(\code{UTCDateTime.timestamp}).
+
+\paragraph{Amplitude units.} Unless stated otherwise amplitudes are in \emph{counts}, the integers produced by the
+Shake's analogue-to-digital converter. Chapter~\ref{ch:response} explains the conversion to ground velocity in m/s.
+
+\paragraph{Decibels.} A power ratio of $P$ is $10\log_{10}P$~dB; an amplitude ratio of $A$ is $20\log_{10}A$~dB. The
+application's spectrograms use $10\log_{10}$ of power spectral density in counts$^2$/Hz, written
+``dB re.\ 1~count$^2$/Hz''.
+
+\begin{rs3dnote}[Software versions]
+The application was developed against ObsPy~1.5.1 \parencite{beyreuther2010,krischer2015}, SciPy~1.x and
+NumPy. Where behaviour depends on a library default (for example SciPy's spectrogram window or ObsPy's response
+removal), the default is stated and was checked directly against the installed library.
+\end{rs3dnote}

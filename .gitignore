@@ -26,3 +26,6 @@ rsudp_out/
 
 # pytest
 .pytest_cache/
+
+# LaTeX build output
+docs/manual/build/

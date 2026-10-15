@@ -1,0 +1,71 @@
+\chapter{Derivations}\label{app:deriv}
+
+\section{Scaling of the amplitude spectrum}\label{app:scale}
+Let $x[n]=A\cos(\theta n)$ with $\theta=2\pi f_0/\fs$, and let the window be $w[n]$, $n=0,\dots,N-1$. Write
+$x[n]=\tfrac A2\bigl(e^{\jj\theta n}+e^{-\jj\theta n}\bigr)$. The windowed DFT at a bin with $2\pi k/N=\theta$ is
+\begin{align}
+  X_w[k] &= \sum_{n}w[n]\,x[n]\,e^{-\jj\theta n}
+  = \frac A2\sum_{n}w[n]\;+\;\frac A2\sum_{n}w[n]\,e^{-\jj2\theta n}.
+\end{align}
+The second sum is the window's transform at twice the tone frequency, far outside the main lobe, and is negligible for a
+tapered window. Hence $\abs{X_w[k]}\approx\tfrac A2\sum_nw[n]$, which is Eq.~\eqref{eq:ampscale}. If only a subset
+$\mathcal V$ of the samples is valid and the others are set to zero, the first sum runs over $\mathcal V$ and the scale becomes
+$\sum_{n\in\mathcal V}w[n]$, the rule used by the application.
+
+\section{Hann window constants}\label{app:hann}
+For $w[n]=\tfrac12\bigl(1-\cos\frac{2\pi n}{N-1}\bigr)$ and large $N$, the mean over a full period of the cosine is zero, so
+$\sum w\approx N/2$, giving a coherent gain of $\tfrac12$. For the energy, with $c=\cos\frac{2\pi n}{N-1}$ averaging to 0 and $c^2$ to $\tfrac12$,
+\[
+  \sum w^2\approx N\,\overline{\tfrac14\bigl(1-2c+c^{2}\bigr)}=\tfrac N4\bigl(1+\tfrac12\bigr)=\tfrac{3N}{8}.
+\]
+The equivalent noise bandwidth is therefore
+\[
+  \mathrm{ENBW}=\frac{N\sum w^2}{(\sum w)^2}=\frac{N\cdot 3N/8}{N^2/4}=1.5\ \text{bins},
+\]
+matching Table~\ref{tab:windows}.
+
+\section{Zero-phase filtering}\label{app:zp}
+Let a filter have impulse response $h$ and frequency response $H(\omega)$. Filtering forward gives $Y_1=H X$. Time reversal of a real
+sequence turns its transform into the complex conjugate (up to a linear phase that is undone by the second reversal), so the
+backward pass multiplies by $H^{*}$ and the final reversal restores the time direction: $Y=H^{*}H\,X=\abs{H}^{2}X$. The
+magnitude response in decibels is $20\log_{10}\abs{H}^{2}=2\cdot20\log_{10}\abs{H}$, twice that of one pass, so the $-3$~dB corner of one
+pass is a $-6$~dB corner of the zero-phase filter.
+
+\section{The recursive averages}\label{app:rec}
+Rearranging Eq.~\eqref{eq:rec}: $\mathrm{STA}_i=(1-\tfrac1N)\mathrm{STA}_{i-1}+\tfrac1N c[i]$. Unrolling,
+\begin{equation}
+  \mathrm{STA}_i = \frac1N\sum_{k=0}^{i}\Bigl(1-\frac1N\Bigr)^{k}c[i-k]+\Bigl(1-\frac1N\Bigr)^{i+1}\mathrm{STA}_{-1}.
+\end{equation}
+The weights sum to $1-(1-1/N)^{i+1}\to1$ and, for large $N$, $(1-1/N)^{k}\approx e^{-k/N}$: an exponential window of time
+constant $N$ samples. The initial-condition term decays with the same time constant, which is why a warm-up of $N_l$ samples is
+needed.
+
+\section{Detection delay}\label{app:delay}
+For a step of the CF power from $P_0$ to $P_1$ at $t=0$ the continuous-time analogue of~\eqref{eq:rec} is
+$\dot{S}=(P_1-S)/\tau_s$ with $S(0)=P_0$, whose solution is $S(t)=P_1+(P_0-P_1)e^{-t/\tau_s}$. Setting
+$S(t_d)=r_{\mathrm{on}}P_0$ and solving for $t_d$,
+\[
+  e^{-t_d/\tau_s}=\frac{P_1-r_{\mathrm{on}}P_0}{P_1-P_0}
+  \;\Rightarrow\;
+  t_d=-\tau_s\ln\frac{P_1-r_{\mathrm{on}}P_0}{P_1-P_0},
+\]
+which is Eq.~\eqref{eq:delay}. The assumption that the LTA is constant during $t_d$ holds when $t_d\ll\tau_l$; for $\tau_l=30$~s and
+$\tau_s=1$~s it is good for all events strong enough to trigger within a few seconds.
+
+\section{The $F$ distribution of the ratio}\label{app:f}
+If the CF is the square of zero-mean Gaussian noise of variance $\sigma^{2}$ filtered to bandwidth $B$, the average of $c$ over $T$ seconds is
+$\sigma^{2}\chi^{2}_{\nu}/\nu$ with $\nu\approx2BT$ degrees of freedom (the number of independent samples is about $2BT$, by the
+sampling theorem). The STA and LTA are independent only if their windows do not overlap, which the classic form approximately
+satisfies, and then $R=\dfrac{\chi^{2}_{\nu_s}/\nu_s}{\chi^{2}_{\nu_l}/\nu_l}\sim F_{\nu_s,\nu_l}$. The tail probabilities of
+Table~\ref{tab:null} are $1-F_{\nu_s,\nu_l}(r)$ with $\nu_s=18$, $\nu_l=540$. They apply to \emph{one} independent evaluation;
+the number of false alarms per day also depends on how many independent evaluations occur and on how exceedances cluster,
+which is why the table reports simulated counts alongside the tail.
+
+\section{Error of min/max decimation}\label{app:mm}
+Let a bin contain samples $x[n]$, $n\in b$, and let $\hat x$ denote the drawn polyline through the kept extremes. Every sample of the bin lies
+between its minimum and maximum, so the vertical distance between any sample and the plotted bin is at most
+$x^{\max}_b-x^{\min}_b$, and the horizontal position of the extremes is exact. Therefore the plotted envelope
+\[
+  \bigl[\,x^{\min}_b,\ x^{\max}_b\,\bigr]
+\]
+equals the true envelope of the bin, and the only information lost is the order of the samples between the extremes.
