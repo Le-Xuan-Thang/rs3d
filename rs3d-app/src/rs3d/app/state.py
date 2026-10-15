@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import tomllib
+from collections import deque
+from dataclasses import asdict, fields
 
 import tomli_w
 
 from rs3d.core.devices import DeviceRegistry, Passwords
+from rs3d.core.events import Event, EventDetector, EventSettings, validate_settings
+from rs3d.core.events_store import EventStore
 from rs3d.core.live import LiveStream
 from rs3d.core.models import Check, Device
 from rs3d.core.paths import AppPaths
@@ -34,6 +38,26 @@ def _clean_prefs(raw: dict) -> dict:
     return prefs
 
 
+def _clean_event_settings(raw) -> EventSettings:
+    """Saved event settings; any missing or wrongly typed value falls back to its default, and a set that
+    fails validation (e.g. a hand-edited LTA shorter than STA) falls back entirely."""
+    defaults = EventSettings()
+    if not isinstance(raw, dict):
+        return defaults
+    values = {}
+    for f in fields(EventSettings):
+        default, value = getattr(defaults, f.name), raw.get(f.name)
+        if isinstance(default, bool):
+            ok = isinstance(value, bool)
+        elif isinstance(default, str):
+            ok = isinstance(value, str)
+        else:
+            ok = isinstance(value, (int, float)) and not isinstance(value, bool)
+        values[f.name] = (float(value) if isinstance(default, float) else value) if ok else default
+    settings = EventSettings(**values)
+    return settings if validate_settings(settings) == "" else defaults
+
+
 class AppState:
     def __init__(self, paths: AppPaths, passwords: Passwords | None = None) -> None:
         self.paths = paths.ensure()
@@ -44,6 +68,11 @@ class AppState:
         settings = tomllib.loads(self._settings_path.read_text()) if self._settings_path.exists() else {}
         self.use_local_time: bool = bool(settings.get("use_local_time", False))
         self.data_prefs: dict = _clean_prefs(settings.get("data_prefs", {}))
+        self.event_settings: EventSettings = _clean_event_settings(settings.get("events", {}))
+        self.events = EventStore(paths.events)
+        self.event_open: tuple[float, float] | None = None  # (start, ratio) while an event is in progress
+        self.event_last: Event | None = None  # last finished event; the banner shows it until dismissed
+        self.recent_events: deque[Event] = deque(reversed(self.events.latest(50)), maxlen=50)  # oldest first
         devices = self.registry.load()
         self.current_host: str | None = settings.get("current_host") or (devices[0].host if devices else None)
         self._live: dict[str, LiveStream] = {}
@@ -51,7 +80,8 @@ class AppState:
     # ---------------------------------------------------------------- settings
     def save_settings(self) -> None:
         data: dict = {"use_local_time": self.use_local_time,
-                      "data_prefs": {k: v for k, v in self.data_prefs.items() if v is not None}}
+                      "data_prefs": {k: v for k, v in self.data_prefs.items() if v is not None},
+                      "events": asdict(self.event_settings)}
         if self.current_host:
             data["current_host"] = self.current_host
         self._settings_path.write_text(tomli_w.dumps(data))
@@ -63,6 +93,36 @@ class AppState:
     def set_data_prefs(self, **changes) -> None:
         self.data_prefs = _clean_prefs({**self.data_prefs, **changes})
         self.save_settings()
+
+    def set_event_settings(self, new: EventSettings) -> str:
+        """Use `new` from now on. Returns '' or the reason it was rejected (the old settings stay active)."""
+        error = validate_settings(new)
+        if error:
+            return error
+        self.event_settings = new
+        for stream in self._live.values():
+            old = stream.detector
+            if old is not None:
+                old.flush()  # an event in progress ends here and is logged
+            stream.detector = self._new_detector()  # warm-up starts again with the new values
+        self.save_settings()
+        return ""
+
+    def reset_event_settings(self) -> None:
+        self.set_event_settings(EventSettings())
+
+    def _new_detector(self) -> EventDetector:
+        return EventDetector(self.event_settings, self._event_ended, self._event_started)
+
+    def _event_started(self, start: float, ratio: float) -> None:
+        self.event_open = (start, ratio)
+        self.event_last = None
+
+    def _event_ended(self, event: Event) -> None:
+        self.event_open = None
+        self.event_last = event
+        self.recent_events.append(event)
+        self.events.append(event)  # a failed write sets events.error; the banner still works
 
     # ---------------------------------------------------------------- devices
     def devices(self) -> list[Device]:
@@ -110,7 +170,8 @@ class AppState:
         stream = self._live.get(device.host)
         if stream is None:
             stream = LiveStream(lambda: SeedLinkSource(device.host, device.seedlink_port, device.network,
-                                                       device.station, CHANNELS))
+                                                       device.station, CHANNELS),
+                                detector=self._new_detector())
             self._live[device.host] = stream
         stream.start()
         return stream
@@ -123,3 +184,8 @@ class AppState:
     def stop_all(self) -> None:
         for host in list(self._live):
             self.stop_live(host)
+
+    def live_channels(self, device: Device) -> set[str]:
+        """Channels the live stream of this device has delivered so far (empty before any data)."""
+        stream = self._live.get(device.host)
+        return set(stream.buffer.channels()) if stream else set()

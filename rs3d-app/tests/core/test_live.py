@@ -117,3 +117,41 @@ def test_decimation_keeps_gap_marker():
     buf.add(trace("EHZ", T0 + 60, 3000))
     t, v = buf.snapshot("EHZ", 90, max_points=200)
     assert len(t) <= 201 and np.isnan(v).sum() == 1
+
+
+def test_ring_buffer_lists_channels_with_data():
+    buf = RingBuffer()
+    assert buf.channels() == []
+    buf.add(trace("EHZ", T0, 10))
+    buf.add(trace("EHN", T0, 10))
+    assert buf.channels() == ["EHN", "EHZ"]
+
+
+def test_detector_gets_every_trace():
+    seen = []
+
+    class Spy:
+        def feed(self, tr):
+            seen.append(tr.stats.channel)
+
+    stream = LiveStream(lambda: None, detector=Spy())
+    stream._on_trace(trace("EHZ", T0, 10))
+    stream._on_trace(trace("EHN", T0, 10))
+    assert seen == ["EHZ", "EHN"]
+
+
+def test_detector_failure_does_not_stop_the_stream():
+    calls = []
+
+    class Broken:
+        def feed(self, tr):
+            calls.append(1)
+            raise RuntimeError("boom")
+
+    stream = LiveStream(lambda: None, detector=Broken())
+    stream._on_trace(trace("EHZ", T0, 100))
+    stream._on_trace(trace("EHZ", T0 + 1, 100))
+    assert len(calls) == 2                      # still called after the first failure
+    assert stream.state == "live"
+    t, v = stream.buffer.snapshot("EHZ", 10)
+    assert len(t) == 200                        # data kept flowing into the ring buffer
