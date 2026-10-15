@@ -83,8 +83,9 @@ def detail_chart_options(mode: str, st: Stream, channel: str, use_utc: bool,
         opt = waveform_options((channel,), use_utc)
         set_stream_data(opt, traces)
         opt["brush"] = dict(BRUSH)
-        if y_range is not None:
-            opt["yAxis"][0]["min"], opt["yAxis"][0]["max"] = y_range
+        opt["toolbox"] = {"show": False}  # without this the brush adds its own buttons on the first draw
+        # always set min/max: the chart merges options, so leaving them out would keep an old box-zoom range
+        opt["yAxis"][0]["min"], opt["yAxis"][0]["max"] = y_range if y_range is not None else (None, None)
         return opt
     merged = traces.copy().merge(method=0)[0]
     if mode == "spectra":
@@ -109,7 +110,7 @@ class DetailPanel:
         with ui.card().classes("w-full") as self.card:
             with ui.row().classes("items-center gap-1"):
                 self.title = ui.label("").classes("font-mono text-sm")
-                ui.button(icon="fit_screen", on_click=self.fit).props("flat dense round") \
+                ui.button(icon="fit_screen", on_click=self.fit).props("flat dense round data-testid=fit") \
                     .tooltip(label("detail.fit")).mark("detail-fit")
                 self.box_button = ui.button(icon="crop_free", on_click=self.toggle_box).props(
                     "flat dense round data-testid=box-zoom").tooltip(label("detail.box_zoom"))

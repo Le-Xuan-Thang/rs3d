@@ -72,6 +72,16 @@ def test_click_a_row_and_save_the_clipboard(server, three_hours, tmp_path):  # n
     assert img.shape[0] > 500 and (img[..., :3] < 0.9).mean() > 0.02
 
 
+# the y range the first (detail) chart is showing, and the range of the data it plots
+Y_VIEW = """() => {
+  const el = document.querySelector('.nicegui-echart');
+  const chart = getElement(el.id.slice(1)).chart;
+  const [lo, hi] = chart.getModel().getComponent('yAxis', 0).axis.scale.getExtent();
+  const v = chart.getOption().series[0].data.map(p => p[1]).filter(x => x !== null);
+  return {lo, hi, data_lo: Math.min(...v), data_hi: Math.max(...v)};
+}"""
+
+
 def _window_seconds(title: str) -> float:
     import re
     from datetime import datetime
@@ -96,6 +106,9 @@ def test_drag_a_rectangle_to_zoom_the_detail_view(server, three_hours):  # noqa:
         title_loc = page.locator(".font-mono").filter(has_text="AM.R77A7.00.EHZ").first
         title_loc.wait_for(timeout=15000)
         assert _window_seconds(title_loc.inner_text()) == 120.0
+        # the brush must not draw its own button row on the first render
+        assert page.evaluate("() => getElement(document.querySelector('.nicegui-echart').id.slice(1))"
+                             ".chart.getOption().toolbox[0].show") is False
         page.locator("[data-testid=box-zoom]").click()
         chart = page.locator(".nicegui-echart").first.bounding_box()
         # drag from 30% to 50% of the width and 30% to 70% of the height of the detail chart
@@ -108,5 +121,14 @@ def test_drag_a_rectangle_to_zoom_the_detail_view(server, three_hours):  # noqa:
             " const m = t.textContent.match(/\\d{2}:\\d{2}:\\d{2}/g); return m && m[0] !== m[1]; }")
         page.wait_for_timeout(1500)
         span = _window_seconds(title_loc.inner_text())
+        zoomed = page.evaluate(Y_VIEW)
+        # Fit rescales the amplitude to the data in view and keeps the zoomed time width
+        page.locator("[data-testid=fit]").click()
+        page.wait_for_timeout(1500)
+        fitted = page.evaluate(Y_VIEW)
+        span_after_fit = _window_seconds(title_loc.inner_text())
         browser.close()
     assert 5 <= span < 60, span  # about a fifth of the 120 s window (clamped to at least 5 s)
+    assert zoomed["lo"] > zoomed["data_lo"] or zoomed["hi"] < zoomed["data_hi"], zoomed  # the box cut the data
+    assert fitted["lo"] <= fitted["data_lo"] and fitted["hi"] >= fitted["data_hi"], (zoomed, fitted)
+    assert span_after_fit == span

@@ -58,8 +58,11 @@ def test_box_from_event_reads_the_dragged_rectangle():
 def test_waveform_options_have_a_brush_and_optional_amplitude_zoom():
     opt = detail_chart_options("waveform", stream(), "EHZ", True)
     assert opt["brush"]["brushType"] == "rect" and opt["brush"]["xAxisIndex"] == 0
-    assert "min" not in opt["yAxis"][0]
+    # no amplitude zoom: min/max are sent explicitly as null, because the chart merges options and
+    # would otherwise keep an earlier box-zoom range on screen
+    assert opt["yAxis"][0]["min"] is None and opt["yAxis"][0]["max"] is None
     assert opt["brush"]["toolbox"] == []  # no built-in brush buttons next to the chart
+    assert opt["toolbox"] == {"show": False}  # the brush must not bring its own button row
     zoomed = detail_chart_options("waveform", stream(), "EHZ", True, y_range=(-200.0, 300.0))
     assert (zoomed["yAxis"][0]["min"], zoomed["yAxis"][0]["max"]) == (-200.0, 300.0)
     assert "brush" not in detail_chart_options("spectra", stream(), "EHZ", True)
