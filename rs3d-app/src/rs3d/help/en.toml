@@ -93,6 +93,17 @@ scale = "Scale"
 previous_day = "Previous day"
 next_day = "Next day"
 
+[labels.detail]
+waveform = "Waveform"
+spectra = "Spectra"
+spectrogram = "Spectrogram"
+fit = "Fit"
+zoom_in = "Zoom in"
+zoom_out = "Zoom out"
+earlier = "Earlier"
+later = "Later"
+no_window_data = "No data in this window."
+
 [labels.preset]
 last_10_min = "Last 10 min"
 last_hour = "Last hour"

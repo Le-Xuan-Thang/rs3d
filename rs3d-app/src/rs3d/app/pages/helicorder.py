@@ -9,18 +9,14 @@ from nicegui import run, ui
 from obspy import UTCDateTime
 
 from rs3d.app.charts import helicorder_height_px, helicorder_options
+from rs3d.app.detail import DetailContext, DetailPanel, inventory_for
 from rs3d.app.pages.data import station_choices
 from rs3d.app.state import AppState
 from rs3d.app.strings import label
 from rs3d.app.widgets import frame
 from rs3d.core.helicorder import ROW_MINUTES, build_rows, click_to_time, load_day, scale_for
-from rs3d.core.response import cached_inventory, get_inventory
 
 SCALES = {0.5: "0.5×", 1.0: "1×", 2.0: "2×", 4.0: "4×", 8.0: "8×"}
-
-
-def inventory_for(state: AppState, net: str, sta: str):
-    return cached_inventory(state.paths.response, net, sta) or get_inventory(state.paths.response, net, sta)
 
 
 def parse_day(text: str | None, fallback: date) -> date:
@@ -67,6 +63,13 @@ def register(state: AppState) -> None:
             scale = ui.select(SCALES, value=1.0, label=label("heli.scale")).props("dense").classes("w-24")
 
         message = ui.label("").classes("text-grey-7")
+
+        def detail_ctx() -> DetailContext:
+            current = state.data_prefs
+            band = (current["fmin"], current["fmax"]) if flt.value else None
+            return DetailContext(net, sta, loc, chan.value, units.value, band, not state.use_local_time)
+
+        detail = DetailPanel(state, detail_ctx)
         chart = ui.echart({"series": []}).classes("w-full")
 
         def navigate(**changes) -> None:
@@ -114,7 +117,7 @@ def register(state: AppState) -> None:
             ui.timer(0.01, refresh, once=True)
 
         async def pick(t: UTCDateTime) -> None:
-            ui.notify(f"{t.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+            await detail.open(t)
 
         async def on_click(e) -> None:
             if e.series_name != "click":
