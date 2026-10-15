@@ -45,3 +45,21 @@ def test_clipboard_panels_use_the_same_option_builders():
     st = stream()
     for mode, kind in (("waveform", "line"), ("spectrogram", "heatmap"), ("spectra", "line")):
         assert detail_chart_options(mode, st, "EHZ", True)["series"][0]["type"] == kind
+
+
+def test_box_from_event_reads_the_dragged_rectangle():
+    from rs3d.app.detail import box_from_event
+    args = {"type": "brushend", "areas": [{"coordRange": [[1700000032162.2, 1700000058963.9], [-600.0, 599.9]]}]}
+    assert box_from_event(args) == (1700000032162.2, 1700000058963.9, -600.0, 599.9)
+    assert box_from_event({"areas": []}) is None
+    assert box_from_event({}) is None
+
+
+def test_waveform_options_have_a_brush_and_optional_amplitude_zoom():
+    opt = detail_chart_options("waveform", stream(), "EHZ", True)
+    assert opt["brush"]["brushType"] == "rect" and opt["brush"]["xAxisIndex"] == 0
+    assert "min" not in opt["yAxis"][0]
+    assert opt["brush"]["toolbox"] == []  # no built-in brush buttons next to the chart
+    zoomed = detail_chart_options("waveform", stream(), "EHZ", True, y_range=(-200.0, 300.0))
+    assert (zoomed["yAxis"][0]["min"], zoomed["yAxis"][0]["max"]) == (-200.0, 300.0)
+    assert "brush" not in detail_chart_options("spectra", stream(), "EHZ", True)

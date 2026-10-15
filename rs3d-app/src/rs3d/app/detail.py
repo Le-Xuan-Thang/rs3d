@@ -16,7 +16,7 @@ from rs3d.app.latest import LatestOnly
 from rs3d.app.state import AppState
 from rs3d.app.strings import label
 from rs3d.core.export import clipboard_title, write_clipboard_png
-from rs3d.core.helicorder import load_window, shift_window, zoom_window
+from rs3d.core.helicorder import box_window, load_window, shift_window, zoom_window
 from rs3d.core.response import cached_inventory, get_inventory
 from rs3d.core.spectro import amplitude_spectrum, spectrogram, window_for
 
@@ -52,18 +52,39 @@ def detail_title(ctx: DetailContext, window: tuple[UTCDateTime, UTCDateTime]) ->
     return text
 
 
+def box_from_event(args: dict) -> tuple[float, float, float, float] | None:
+    """(x0_ms, x1_ms, y0, y1) from an ECharts brushEnd event, or None when no rectangle was drawn."""
+    areas = (args or {}).get("areas") or []
+    if not areas:
+        return None
+    (x0, x1), (y0, y1) = areas[0]["coordRange"]
+    return float(x0), float(x1), float(y0), float(y1)
+
+
 def inventory_for(state: AppState, net: str, sta: str):
     return cached_inventory(state.paths.response, net, sta) or get_inventory(state.paths.response, net, sta)
 
 
-def detail_chart_options(mode: str, st: Stream, channel: str, use_utc: bool) -> dict | None:
-    """ECharts options for one detail mode, or None when the window has no samples for the channel."""
+BRUSH = {"xAxisIndex": 0, "yAxisIndex": 0, "brushType": "rect", "brushMode": "single", "transformable": False,
+         "toolbox": [],  # no built-in brush buttons: the Box zoom button switches the drag on
+         "brushStyle": {"borderWidth": 1, "color": "rgba(47,111,222,0.2)", "borderColor": "#2f6fde"}}
+
+
+def detail_chart_options(mode: str, st: Stream, channel: str, use_utc: bool,
+                         y_range: tuple[float, float] | None = None) -> dict | None:
+    """ECharts options for one detail mode, or None when the window has no samples for the channel.
+
+    The waveform gets a rectangle brush (for box zoom) and, when `y_range` is given, a fixed amplitude range.
+    """
     traces = st.select(channel=channel)
     if not len(traces) or not sum(tr.stats.npts for tr in traces):
         return None
     if mode == "waveform":
         opt = waveform_options((channel,), use_utc)
         set_stream_data(opt, traces)
+        opt["brush"] = dict(BRUSH)
+        if y_range is not None:
+            opt["yAxis"][0]["min"], opt["yAxis"][0]["max"] = y_range
         return opt
     merged = traces.copy().merge(method=0)[0]
     if mode == "spectra":
@@ -82,6 +103,8 @@ class DetailPanel:
         self.origin: tuple[UTCDateTime, UTCDateTime] | None = None
         self.window: tuple[UTCDateTime, UTCDateTime] | None = None
         self.mode = "waveform"
+        self.y_range: tuple[float, float] | None = None  # amplitude zoom set by box zoom
+        self.box_on = False
         self.loaded: Loaded | None = None
         self._latest = LatestOnly()
         with ui.card().classes("w-full") as self.card:
@@ -89,6 +112,8 @@ class DetailPanel:
                 self.title = ui.label("").classes("font-mono text-sm")
                 ui.button(icon="fit_screen", on_click=self.fit).props("flat dense round") \
                     .tooltip(label("detail.fit")).mark("detail-fit")
+                self.box_button = ui.button(icon="crop_free", on_click=self.toggle_box).props(
+                    "flat dense round data-testid=box-zoom").tooltip(label("detail.box_zoom"))
                 ui.button(icon="remove", on_click=lambda: self.zoom(2.0)).props("flat dense round") \
                     .tooltip(label("detail.zoom_out")).mark("detail-zoom-out")
                 ui.button(icon="add", on_click=lambda: self.zoom(0.5)).props("flat dense round") \
@@ -104,11 +129,20 @@ class DetailPanel:
                 ui.button(icon="close", on_click=self.close).props("flat dense round").mark("detail-close")
             self.message = ui.label("").classes("text-grey-7")
             self.chart = ui.echart({"series": []}).classes("w-full").style("height: 34vh")
+            self.chart.on("chart:brushEnd", self.on_brush)
         self.card.set_visibility(False)
+
+    async def go(self, window: tuple[UTCDateTime, UTCDateTime], y_range: tuple[float, float] | None = None) -> bool:
+        """Show `window` with the given amplitude zoom; both are only kept when the load succeeds."""
+        previous, self.y_range = self.y_range, y_range
+        ok = await self.load(window)
+        if not ok:
+            self.y_range = previous
+        return ok
 
     async def open(self, center: UTCDateTime, span: float = 120.0) -> None:
         window = (center - span / 2, center + span / 2)
-        if await self.load(window):
+        if await self.go(window):
             self.origin = window
             self.card.set_visibility(True)
 
@@ -117,15 +151,21 @@ class DetailPanel:
 
     async def fit(self) -> None:
         if self.origin:
-            await self.load(self.origin)
+            await self.go(self.origin)
 
     async def zoom(self, factor: float) -> None:
         if self.window:
-            await self.load(zoom_window(*self.window, factor))
+            await self.go(zoom_window(*self.window, factor))
 
     async def shift(self, direction: int) -> None:
         if self.window:
-            await self.load(shift_window(*self.window, direction))
+            await self.go(shift_window(*self.window, direction))
+
+    async def apply_box(self, x0_ms: float, x1_ms: float, y0: float, y1: float) -> None:
+        """Zoom into a dragged rectangle: its time edges become the window, its amplitude edges the y range."""
+        if self.window:
+            low, high = (float(f"{v:.4g}") for v in (min(y0, y1), max(y0, y1)))  # readable axis labels
+            await self.go(box_window(self.window, x0_ms, x1_ms), (low, high))
 
     async def reload(self) -> None:
         """Load the current window again, with the page's current units and band-pass."""
@@ -136,9 +176,28 @@ class DetailPanel:
         if self.card.visible:
             await self.reload()
 
+    def toggle_box(self) -> None:
+        self.box_on = not self.box_on
+        self.box_button.props(f"color={'primary' if self.box_on else 'grey-8'}")
+        self.apply_cursor()
+
+    def apply_cursor(self) -> None:
+        """Switch the chart's drag cursor between box select and normal."""
+        on = self.box_on and self.mode == "waveform"
+        self.chart.run_chart_method("dispatchAction", {
+            "type": "takeGlobalCursor", "key": "brush",
+            "brushOption": {"brushType": "rect", "brushMode": "single"} if on else False})
+
+    async def on_brush(self, e) -> None:
+        box = box_from_event(e.args)
+        self.chart.run_chart_method("dispatchAction", {"type": "brush", "areas": []})  # clear the drawn rectangle
+        if box is not None:
+            await self.apply_box(*box)
+
     def set_mode(self, _=None) -> None:
         self.mode = self.toggle.value
         self.draw()
+        self.apply_cursor()
 
     async def load(self, window: tuple[UTCDateTime, UTCDateTime]) -> bool:
         """Load `window`; the panel only changes (window, data, chart) when this load succeeds and is the newest."""
@@ -203,7 +262,7 @@ class DetailPanel:
             return
         ctx, window, st = self.loaded.ctx, self.loaded.window, self.loaded.stream
         self.title.text = detail_title(ctx, window)
-        options = detail_chart_options(self.mode, st, ctx.channel, ctx.use_utc)
+        options = detail_chart_options(self.mode, st, ctx.channel, ctx.use_utc, self.y_range)
         if options is None:
             self.message.text = label("detail.no_window_data")
             self.chart.set_visibility(False)
@@ -213,3 +272,5 @@ class DetailPanel:
         self.chart.options.clear()
         self.chart.options.update(options)
         self.chart.update()
+        if self.box_on:
+            self.apply_cursor()  # a redraw resets the cursor

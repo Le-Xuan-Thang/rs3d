@@ -103,3 +103,19 @@ def zoom_window(start: UTCDateTime, end: UTCDateTime, factor: float) -> tuple[UT
 def shift_window(start: UTCDateTime, end: UTCDateTime, direction: int) -> tuple[UTCDateTime, UTCDateTime]:
     step = (end - start) / 2 * direction
     return start + step, end + step
+
+
+def box_window(window: tuple[UTCDateTime, UTCDateTime], x0_ms: float, x1_ms: float
+               ) -> tuple[UTCDateTime, UTCDateTime]:
+    """New detail window from the time edges (epoch ms) of a dragged box.
+
+    The box is clipped to the current window and never made narrower than MIN_SPAN (centred on the box);
+    a box with no overlap leaves the window unchanged.
+    """
+    lo = max(min(x0_ms, x1_ms) / 1000.0, window[0].timestamp)
+    hi = min(max(x0_ms, x1_ms) / 1000.0, window[1].timestamp)
+    if hi <= lo:
+        return window
+    span = max(hi - lo, MIN_SPAN)
+    centre = (lo + hi) / 2
+    return UTCDateTime(centre - span / 2), UTCDateTime(centre + span / 2)

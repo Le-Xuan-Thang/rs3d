@@ -86,3 +86,17 @@ def test_saving_an_empty_window_does_not_raise():
         await panel.open(UTCDateTime("2026-10-13T00:00:00"))  # no data on that day
         assert await panel.save_clipboard() is None
     run(scenario)
+
+
+def test_box_zoom_narrows_the_window_and_amplitude_and_fit_resets_both():
+    async def scenario():
+        REG["ctx"]["ctx"] = ctx()
+        panel = REG["panel"]
+        await panel.open(T)                                   # 00:04:00 - 00:06:00
+        t0 = (T - 30).timestamp * 1000
+        await panel.apply_box(t0, t0 + 20000, 250.98765, -100.123456)  # a 20 s box, dragged bottom to top
+        assert panel.window[1] - panel.window[0] == 20.0
+        assert panel.y_range == (-100.1, 251.0)  # 4 significant figures: readable axis labels
+        await panel.fit()
+        assert panel.window[1] - panel.window[0] == 120.0 and panel.y_range is None
+    run(scenario)

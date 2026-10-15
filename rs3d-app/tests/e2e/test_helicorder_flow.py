@@ -70,3 +70,43 @@ def test_click_a_row_and_save_the_clipboard(server, three_hours, tmp_path):  # n
         browser.close()
     img = image.imread(out)
     assert img.shape[0] > 500 and (img[..., :3] < 0.9).mean() > 0.02
+
+
+def _window_seconds(title: str) -> float:
+    import re
+    from datetime import datetime
+    a, b = re.findall(r"\d{4}-\d\d-\d\d \d\d:\d\d:\d\d", title)
+    fmt = "%Y-%m-%d %H:%M:%S"
+    return (datetime.strptime(b, fmt) - datetime.strptime(a, fmt)).total_seconds()
+
+
+def test_drag_a_rectangle_to_zoom_the_detail_view(server, three_hours):  # noqa: F811
+    with playwright_sync.sync_playwright() as p:
+        browser = p.chromium.launch(channel="chrome", headless=True)
+        page = browser.new_page(viewport={"width": 1400, "height": 1000})
+        page.goto(server + "/data")
+        page.locator("input[type=file]").set_input_files(str(three_hours))
+        page.get_by_text("Preview", exact=True).wait_for(timeout=30000)
+        page.goto(server + "/helicorder?station=AM.R77A7.00&day=2026-10-12")
+        page.wait_for_function(
+            '[...document.querySelectorAll(".nicegui-echart canvas")].some(c => c.height > 600)', timeout=30000)
+        page.wait_for_timeout(1500)
+        box = page.locator(".nicegui-echart").last.bounding_box()
+        page.mouse.click(box["x"] + 56 + (box["width"] - 112) * (10 / 30), box["y"] + 8 + 14 * 2.5)
+        title_loc = page.locator(".font-mono").filter(has_text="AM.R77A7.00.EHZ").first
+        title_loc.wait_for(timeout=15000)
+        assert _window_seconds(title_loc.inner_text()) == 120.0
+        page.locator("[data-testid=box-zoom]").click()
+        chart = page.locator(".nicegui-echart").first.bounding_box()
+        # drag from 30% to 50% of the width and 30% to 70% of the height of the detail chart
+        page.mouse.move(chart["x"] + chart["width"] * 0.3, chart["y"] + chart["height"] * 0.3)
+        page.mouse.down()
+        page.mouse.move(chart["x"] + chart["width"] * 0.5, chart["y"] + chart["height"] * 0.7, steps=10)
+        page.mouse.up()
+        page.wait_for_function(
+            "() => { const t = [...document.querySelectorAll('.font-mono')].find(e => e.textContent.includes('AM.R77A7.00.EHZ'));"
+            " const m = t.textContent.match(/\\d{2}:\\d{2}:\\d{2}/g); return m && m[0] !== m[1]; }")
+        page.wait_for_timeout(1500)
+        span = _window_seconds(title_loc.inner_text())
+        browser.close()
+    assert 5 <= span < 60, span  # about a fifth of the 120 s window (clamped to at least 5 s)

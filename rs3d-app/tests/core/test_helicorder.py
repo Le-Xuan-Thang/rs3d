@@ -117,3 +117,22 @@ def test_dc_offset_is_removed_per_row_so_default_counts_are_readable():
     row0 = build_rows(Stream([trace(0, noise)]), DAY)[0]
     assert abs(np.median(row0.values)) < 50
     assert scale_for([row0]) < 3000  # about 2 x the noise, not 2 x the offset
+
+
+def test_box_window_zooms_to_the_dragged_time_edges():
+    from rs3d.core.helicorder import box_window
+    win = (DAY + 100, DAY + 220)
+    a, b = box_window(win, (DAY + 130).timestamp * 1000, (DAY + 160).timestamp * 1000)
+    assert (a - DAY, b - DAY) == (130.0, 160.0)
+    a, b = box_window(win, (DAY + 160).timestamp * 1000, (DAY + 130).timestamp * 1000)  # dragged right to left
+    assert (a - DAY, b - DAY) == (130.0, 160.0)
+
+
+def test_box_window_never_gets_narrower_than_the_minimum_or_leaves_the_window():
+    from rs3d.core.helicorder import box_window
+    win = (DAY + 100, DAY + 220)
+    a, b = box_window(win, (DAY + 150).timestamp * 1000, (DAY + 151).timestamp * 1000)  # 1 s box
+    assert b - a == MIN_SPAN and abs((a.timestamp + b.timestamp) / 2 - (DAY + 150.5).timestamp) < 1e-6
+    a, b = box_window(win, (DAY + 0).timestamp * 1000, (DAY + 500).timestamp * 1000)    # box wider than the window
+    assert (a, b) == win
+    assert box_window(win, (DAY + 400).timestamp * 1000, (DAY + 500).timestamp * 1000) == win  # entirely outside
