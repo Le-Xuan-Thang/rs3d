@@ -51,3 +51,11 @@ def test_event_labels_exist():
                 "events.active", "events.ended", "events.dismiss", "events.latest", "events.none",
                 "events.rescan", "events.scanning", "events.found", "events.log_error"):
         assert label(key) != key, key
+
+
+def test_guide_describes_when_days_are_scanned():
+    from pathlib import Path
+    import rs3d
+    text = (Path(rs3d.__file__).parent / "guide" / "en.md").read_text()
+    assert "after a download the days are scanned" not in text
+    assert "each time you preview or download" in text and "twice the LTA" in text

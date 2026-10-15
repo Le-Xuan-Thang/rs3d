@@ -19,7 +19,7 @@ Internet. It is not an official Raspberry Shake product.
 | **Live** | Real-time EHZ / EHN / EHE traces over SeedLink (port 18000): 30 s to 10 min windows, adjustable band-pass, pause, reconnect with a visible reason, *Save this segment*. |
 | **Helicorder** | A day in 30-minute rows. Click a row for a zoomable detail view (waveform, spectra, spectrogram, zoom, shift, **box zoom**, Fit) and a *Waveform Clipboard* that saves a picture. |
 | **Data** | Pick a station and time range with a coverage bar (laptop / Shake / gap), download from the Shake's archive or **import any miniSEED file**, then see waveforms, spectrogram, noise spectrum and data health (completeness, gaps). Export **miniSEED, CSV, PNG, PDF**, or a **Python (ObsPy) script** that reproduces exactly what you see. |
-| **Events** | An rsudp-style STA/LTA alert on the live stream: red banner on the Live page, a saved event log, automatic scan of downloaded days, markers on the Data page and the helicorder. All thresholds editable in Settings. |
+| **Events** | An rsudp-style STA/LTA alert on the live stream: red banner on the Live page, a saved event log, scan of the selected days on each preview or download, markers on the Data page and the helicorder. All thresholds editable in Settings. |
 | **Guide**, **Settings** | Built-in help behind every (?) icon; add Shakes, time zone, data folder. |
 
 <p align="center">
