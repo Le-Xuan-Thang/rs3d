@@ -126,14 +126,17 @@ def set_from_laptop(shell, now: Callable[[], float] = time.time,
         return SyncResult("set_from_laptop", before, None, False,
                           "The laptop clock looks wrong (before 2025), so it was not used.")
     try:
-        shell.run(f"sudo -n date -u -s @{int(now())}")
+        shell.run(f"sudo -n date -u -s @{now():.3f}")  # fractional epoch, read as late as possible
         shell.run(RESTART_COMMAND)
     except ShellError as exc:
         return SyncResult("set_from_laptop", before, None, False, str(exc))
-    sleep(POLL_SECONDS)
-    after = _measure(shell, now)
-    ok = after is not None and abs(after) <= T
-    return SyncResult("set_from_laptop", before, after, ok, "" if ok else "The clock is still off after setting it.")
+    after = None
+    for _ in range(3):
+        sleep(POLL_SECONDS)
+        after = _measure(shell, now)
+        if after is not None and abs(after) <= T:
+            return SyncResult("set_from_laptop", before, after, True)
+    return SyncResult("set_from_laptop", before, after, False, "The clock is still off after setting it.")
 
 
 def log_sync(path: Path, result: SyncResult, now: Callable[[], float] = time.time) -> None:
@@ -142,7 +145,8 @@ def log_sync(path: Path, result: SyncResult, now: Callable[[], float] = time.tim
         return "?" if v is None else f"{v:+.2f}"
 
     stamp = datetime.fromtimestamp(now(), timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    status = "ok" if result.ok else f"FAILED: {result.message}"
+    message = " ".join(result.message.split())  # keep each attempt on one line
+    status = "ok" if result.ok else f"FAILED: {message}"
     try:
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         with open(path, "a", encoding="utf-8") as f:

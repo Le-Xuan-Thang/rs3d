@@ -23,9 +23,10 @@ class FakeClock:
 
 
 class FakeShell:
-    def __init__(self, clock, ntpq=("*x",), fail=None, steps=True):
+    def __init__(self, clock, ntpq=("*x",), fail=None, steps=True, sets=True):
         self.clock, self.ntpq, self.fail, self.commands = clock, list(ntpq), fail or {}, []
         self.steps = steps  # does restarting ntpd really correct the clock?
+        self.sets = sets  # does `date -u -s` really set the clock?
 
     def run(self, command):
         self.commands.append(command)
@@ -36,7 +37,7 @@ class FakeShell:
             return f"{self.clock.t + self.clock.skew:.9f}\n"
         if command.startswith("ntpq"):
             return self.ntpq.pop(0) if len(self.ntpq) > 1 else self.ntpq[0]
-        if command.startswith("sudo -n date -u -s @"):
+        if command.startswith("sudo -n date -u -s @") and self.sets:
             self.clock.skew = 0.0  # the Shake now has the laptop's time
         if "restart ntpd" in command and self.steps and self.ntpq[-1].startswith("*"):
             self.clock.skew = 0.0  # ntpd found a source and stepped the clock
@@ -141,8 +142,9 @@ def test_sync_now_command_failure():  # Review Focus 4
 def test_sync_now_survives_ntpq_error():
     clk = FakeClock(skew=0.0)
     sh = FakeShell(clk, fail={"ntpq": "ntpq: connection refused"})
-    res = sync_now(sh, clk.now, lambda s: None)
-    assert not res.ok
+    sleeps = []
+    res = sync_now(sh, clk.now, sleeps.append)
+    assert not res.ok and "30 s" in res.message and len(sleeps) == 15
 
 
 def test_set_from_laptop_runs_commands_in_order_and_remeasures():
@@ -150,9 +152,34 @@ def test_set_from_laptop_runs_commands_in_order_and_remeasures():
     sh = FakeShell(clk)
     res = set_from_laptop(sh, clk.now, lambda s: None)
     cmds = [c for c in sh.commands if c.startswith("sudo")]
-    assert cmds[0].startswith("sudo -n date -u -s @18") and cmds[1] == "sudo -n systemctl restart ntpd"
+    assert cmds[0].startswith("sudo -n date -u -s @18") and "." in cmds[0].split("@")[1]
+    assert cmds[1] == "sudo -n systemctl restart ntpd"
     assert res.ok and res.method == "set_from_laptop" and abs(res.after) <= T
     assert res.before == pytest.approx(-90000.0, abs=0.1)
+
+
+def test_set_from_laptop_sends_fractional_epoch_close_to_now():
+    clk = FakeClock(start=1_800_000_000.97, skew=-90000.0)
+    sh = FakeShell(clk)
+    set_from_laptop(sh, clk.now, lambda s: None)
+    cmd = next(c for c in sh.commands if c.startswith("sudo -n date -u -s @"))
+    assert abs(float(cmd.split("@")[1]) - 1_800_000_000.97) < 0.1
+
+
+def test_set_from_laptop_reports_clock_still_off():
+    clk = FakeClock(skew=-90000.0)
+    sh = FakeShell(clk, sets=False, steps=False)
+    res = set_from_laptop(sh, clk.now, lambda s: None)
+    assert not res.ok and res.message == "The clock is still off after setting it."
+    assert res.after == pytest.approx(-90000.0, abs=0.1)
+
+
+def test_set_from_laptop_restart_failure_after_set():
+    clk = FakeClock(skew=-90000.0)
+    sh = FakeShell(clk, fail={"systemctl": "sudo: a password is required"})
+    res = set_from_laptop(sh, clk.now, lambda s: None)
+    assert not res.ok and "password" in res.message
+    assert any(c.startswith("sudo -n date -u -s @") for c in sh.commands)
 
 
 def test_set_from_laptop_refuses_bad_laptop_clock():  # Review Focus 5
@@ -177,6 +204,13 @@ def test_log_sync_appends_lines(tmp_path):
     lines = p.read_text().splitlines()
     assert lines[0] == "2027-01-15T08:00:00Z\tsync_now\tbefore=-400.20\tafter=+0.03\tok"
     assert lines[1].endswith("set_from_laptop\tbefore=?\tafter=?\tFAILED: boom")
+
+
+def test_log_sync_collapses_multiline_message(tmp_path):
+    p = tmp_path / "clock-sync.log"
+    log_sync(p, SyncResult("sync_now", None, None, False, "line one\nline\ttwo\n"), lambda: 1_800_000_000.0)
+    lines = p.read_text().splitlines()
+    assert len(lines) == 1 and lines[0].endswith("FAILED: line one line two")
 
 
 def test_log_sync_failure_is_silent(tmp_path):
