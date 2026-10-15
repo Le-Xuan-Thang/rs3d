@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 
 import numpy as np
@@ -161,3 +162,65 @@ def psd_options(freqs: np.ndarray, lo: np.ndarray, med: np.ndarray, hi: np.ndarr
         "series": [line("10%", lo, width=1, type="dashed"), line("median", med, width=2),
                    line("90%", hi, width=1, type="dashed")],
     }
+
+
+ROW_PX = 14
+ROW_COLORS = ("#37474f", "#ec407a")
+_GRID_TOP, _GRID_BOTTOM = 8, 36
+
+
+def helicorder_height_px(n_rows: int) -> int:
+    """Chart height in pixels so that one row is exactly ROW_PX tall."""
+    return n_rows * ROW_PX + _GRID_TOP + _GRID_BOTTOM
+
+
+def _hour_label(ts: float, utc: bool) -> str:
+    dt = datetime.fromtimestamp(ts, timezone.utc if utc else None)
+    return dt.strftime("%H:%M") if dt.minute == 0 else ""
+
+
+def _label_js(labels: list[str]) -> str:
+    return "(v) => " + json.dumps(labels) + "[Math.round(v)] ?? ''"
+
+
+def helicorder_options(rows: list, scale: float, row_minutes: int = 30, click_every_s: float = 10.0) -> dict:
+    """One line per row (y = row_index - value / scale), plus an invisible scatter grid that reports clicks.
+
+    A click reports value [x_minutes, row_index] for series "click".
+    """
+    n = len(rows)
+    series: list[dict] = []
+    for i, row in enumerate(rows):
+        data = [[round(float(s) / 60.0, 4), None if np.isnan(v) else round(float(i - v / scale), 3)]
+                for s, v in zip(row.seconds, row.values)]
+        series.append({"type": "line", "name": f"row{i}", "showSymbol": False, "silent": True,
+                       "lineStyle": {"width": 1, "color": ROW_COLORS[i % 2]}, "data": data})
+    per_row = int(row_minutes * 60 / click_every_s)
+    grid = [[round((j + 0.5) * click_every_s / 60.0, 4), i] for i in range(n) for j in range(per_row)]
+    series.append({"type": "scatter", "name": "click", "symbol": "rect", "symbolSize": [10, ROW_PX],
+                   "itemStyle": {"opacity": 0.01}, "data": grid})
+    utc_labels = [_hour_label(r.start.timestamp, True) for r in rows]
+    local_labels = [_hour_label(r.start.timestamp, False) for r in rows]
+
+    def y_axis(labels: list[str], position: str) -> dict:
+        return {"type": "value", "inverse": True, "min": -0.5, "max": n - 0.5, "interval": 1, "position": position,
+                "axisLine": {"show": False}, "axisTick": {"show": False}, "splitLine": {"show": False},
+                "axisLabel": {":formatter": _label_js(labels)}}
+
+    return {"animation": False, "tooltip": {"show": False},
+            "grid": {"left": 56, "right": 56, "top": _GRID_TOP, "bottom": _GRID_BOTTOM},
+            "xAxis": {"type": "value", "min": 0, "max": row_minutes, "name": "Minutes", "nameLocation": "middle",
+                      "nameGap": 24, "interval": 5, "axisLine": {"onZero": False}},
+            "yAxis": [y_axis(utc_labels, "left"), y_axis(local_labels, "right")],
+            "series": series}
+
+
+def spectrum_options(freqs: np.ndarray, amplitude: np.ndarray) -> dict:
+    """Log-log amplitude spectrum of one window."""
+    data = [[float(f), float(a)] for f, a in zip(freqs, amplitude) if a > 0]
+    return {"animation": False, "grid": {"left": 70, "right": 24, "top": 16, "bottom": 40},
+            "xAxis": {"type": "log", "name": "Frequency in Hz", "nameLocation": "middle", "nameGap": 26},
+            "yAxis": {"type": "log", "name": "Amplitude", "nameLocation": "middle", "nameGap": 52},
+            "tooltip": {"trigger": "axis"},
+            "series": [{"type": "line", "showSymbol": False, "data": data,
+                        "lineStyle": {"width": 1, "color": "#e53935"}}]}

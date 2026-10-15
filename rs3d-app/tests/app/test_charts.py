@@ -76,3 +76,47 @@ def test_psd_options_log_axis_with_band():
     assert opt["xAxis"]["type"] == "log"
     assert [s["name"] for s in opt["series"]] == ["10%", "median", "90%"]
     assert opt["series"][1]["data"][0] == [0.1, -85.0]
+
+
+def _rows(n_with_data=48):
+    from obspy import UTCDateTime
+    from rs3d.core.helicorder import Row
+    day = UTCDateTime("2026-10-12")
+    rows = []
+    for i in range(48):
+        if i < n_with_data:
+            rows.append(Row(day + i * 1800, np.array([0.0, 60.0, 61.0, 120.0]), np.array([1.0, np.nan, -2.0, 3.0])))
+        else:
+            rows.append(Row(day + i * 1800, np.array([]), np.array([])))
+    return rows
+
+
+def test_helicorder_options_rows_colours_and_offsets():
+    from rs3d.app.charts import ROW_COLORS, helicorder_options
+    opt = helicorder_options(_rows(), scale=2.0)
+    lines = [s for s in opt["series"] if s["type"] == "line"]
+    assert len(lines) == 48 and lines[0]["name"] == "row0"
+    assert lines[0]["lineStyle"]["color"] == ROW_COLORS[0] and lines[1]["lineStyle"]["color"] == ROW_COLORS[1]
+    # y = row_index - value / scale ; x in minutes ; NaN -> None
+    assert lines[3]["data"][0] == [0.0, 3 - 1.0 / 2.0]
+    assert lines[3]["data"][1][1] is None
+    assert opt["yAxis"][0]["inverse"] is True and opt["xAxis"]["max"] == 30
+    assert opt["xAxis"]["axisLine"]["onZero"] is False  # inverted y axis: keep the x axis at the bottom
+
+
+def test_helicorder_click_grid_and_labels():
+    from rs3d.app.charts import ROW_PX, helicorder_height_px, helicorder_options
+    opt = helicorder_options(_rows(n_with_data=0), scale=1.0)
+    click = next(s for s in opt["series"] if s["name"] == "click")
+    assert click["type"] == "scatter" and len(click["data"]) == 48 * 180
+    assert click["data"][0] == [round(5 / 60, 4), 0] and click["data"][-1][1] == 47
+    assert helicorder_height_px(48) == 48 * ROW_PX + 44
+    left = opt["yAxis"][0]["axisLabel"][":formatter"]
+    assert '"00:00"' in left and '"01:00"' in left
+
+
+def test_spectrum_options_is_log_log_and_drops_zeros():
+    from rs3d.app.charts import spectrum_options
+    opt = spectrum_options(np.array([1.0, 2.0, 3.0]), np.array([10.0, 0.0, 5.0]))
+    assert opt["xAxis"]["type"] == "log" and opt["yAxis"]["type"] == "log"
+    assert opt["series"][0]["data"] == [[1.0, 10.0], [3.0, 5.0]]
