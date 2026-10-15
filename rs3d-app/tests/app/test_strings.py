@@ -71,3 +71,10 @@ def test_clock_sync_labels_exist():
     for key in ("action.sync_clock", "clock.title", "clock.offset", "clock.working", "clock.done",
                 "clock.failed", "clock.sync_now", "clock.set_laptop", "clock.warning"):
         assert label(key) != key, key
+
+
+def test_live_helicorder_texts_exist():
+    for key in ("live.mode_wave", "live.mode_heli", "live.open_heli"):
+        assert label(key) != key, key
+    short, detail = help_text("live_heli")
+    assert short and detail
