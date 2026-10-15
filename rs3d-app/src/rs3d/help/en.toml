@@ -31,6 +31,7 @@ password = "Password"
 [labels.action]
 refresh = "Refresh"
 set_ip = "Set IP"
+sync_clock = "Sync clock"
 download = "Download"
 run = "Run"
 cancel = "Cancel"
@@ -163,6 +164,16 @@ scanning = "scanning events…"
 found = "{n} event(s)"
 log_error = "Cannot write the event log ({error}). Events are shown but not saved."
 
+[labels.clock]
+title = "Fix the Shake's clock"
+offset = "Shake clock"
+working = "Working… (up to 30 s)"
+done = "Done. The Shake clock is now within 1 s of the laptop."
+failed = "That did not work:"
+sync_now = "Sync now"
+set_laptop = "Set from laptop"
+warning = "Changing the time can leave a small gap or overlap in the Shake's data. Sync now restarts the Shake's time service, which uses the laptop or the Internet. Set from laptop copies this laptop's clock to the Shake; use it only if this laptop's clock is right."
+
 # ---------------------------------------------------------------- (?) texts
 
 [help.laptop_ip]
@@ -238,6 +249,20 @@ detail = """
 
 Fix Internet on the Shake (see **Internet** and **Wi-Fi**) or connect the laptop that serves time.
 """
+
+[help.clock.sync]
+short = "The Shake clock is off and it has no time source."
+detail = """
+After a power cut the Shake starts with an old time (it has no battery clock) until its time service (**ntpd**) reaches a source.
+
+Press **Sync clock**, then **Sync now**: the app restarts ntpd, which steps the clock from the laptop (`169.254.8.11`) or from Internet servers over Wi-Fi. If that does not work within 30 s, **Set from laptop** copies this laptop's UTC time to the Shake.
+
+Data recorded while the clock was wrong keeps the wrong timestamps.
+"""
+
+[help.clock.laptop]
+short = "The Shake is synced, but this laptop's clock differs from it."
+detail = "The Shake has a selected time source, so its clock is probably right. Check this laptop's time (`timedatectl`) rather than changing the Shake."
 
 [help.internet]
 short = "Whether the Shake reaches the Internet (needed for its clock)."

@@ -12,6 +12,8 @@ from rs3d.app.state import AppState
 from rs3d.app.strings import label
 from rs3d.app.widgets import frame, help_icon, level_icon
 from rs3d.core import netcheck
+from rs3d.core.clock import log_sync, measure_offset, offset_text, set_from_laptop, sync_now
+from rs3d.core.shell import ShellError
 from rs3d.core.models import Check
 
 _NOT_WIRED = ("lo", "docker", "veth", "virbr", "br-", "tailscale", "wl", "wi-fi", "wlan", "loopback", "utun",
@@ -62,6 +64,10 @@ def register(state: AppState) -> None:
                         elif c.action == "download":
                             ui.button(label("action.download"), on_click=lambda: ui.navigate.to("/data")) \
                                 .props("dense flat")
+                        elif c.action == "sync_clock":
+                            ui.button(label("action.sync_clock"),
+                                      on_click=lambda: sync_clock_dialog(state, device, refresh)) \
+                                .props("dense unelevated")
 
         async def refresh() -> None:
             checks = await run.io_bound(state.checks, device)
@@ -114,5 +120,51 @@ def set_ip_dialog(after) -> None:
         with ui.row():
             ui.button(label("action.run"), on_click=apply).props("unelevated")
             ui.button(label("action.cancel"), on_click=dialog.close).props("flat")
+    dialog.open()
+    ui.timer(0.05, show, once=True)
+
+
+def sync_clock_dialog(state: AppState, device, after) -> None:
+    log_path = state.paths.logs / "clock-sync.log"
+    with ui.dialog() as dialog, ui.card().classes("min-w-96 max-w-xl"):
+        ui.label(label("clock.title")).classes("text-base font-bold")
+        info = ui.label("").classes("font-mono text-sm")
+        ui.label(label("clock.warning")).classes("text-xs text-grey-7")
+        result = ui.label("").classes("text-sm")
+        with ui.row():
+            sync = ui.button(label("clock.sync_now"), on_click=lambda: act(sync_now)).props("unelevated")
+            laptop = ui.button(label("clock.set_laptop"), on_click=lambda: act(set_from_laptop)).props("flat")
+            ui.button(label("action.close"), on_click=dialog.close).props("flat")
+    laptop.set_visibility(False)  # offered only after Sync now did not work
+
+    def work(action):
+        with state.shell(device) as sh:
+            return action(sh)
+
+    async def act(action) -> None:
+        sync.disable()
+        laptop.disable()
+        result.text = label("clock.working")
+        try:
+            res = await run.io_bound(work, action)
+        except ShellError as exc:
+            result.text = f"{label('clock.failed')} {exc}"
+            return
+        finally:
+            sync.enable()
+            laptop.enable()
+        log_sync(log_path, res)
+        result.text = label("clock.done") if res.ok else f"{label('clock.failed')} {res.message}"
+        if not res.ok:
+            laptop.set_visibility(True)
+        await after()
+
+    async def show() -> None:
+        try:
+            offset = await run.io_bound(work, measure_offset)
+            info.text = f"{label('clock.offset')}: {offset_text(offset)}"
+        except (ShellError, ValueError) as exc:
+            info.text = str(exc)
+
     dialog.open()
     ui.timer(0.05, show, once=True)

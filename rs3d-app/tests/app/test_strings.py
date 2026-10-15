@@ -59,3 +59,15 @@ def test_guide_describes_when_days_are_scanned():
     text = (Path(rs3d.__file__).parent / "guide" / "en.md").read_text()
     assert "after a download the days are scanned" not in text
     assert "each time you preview or download" in text and "twice the LTA" in text
+
+
+def test_clock_sync_help_ids_have_short_and_detail():
+    for hid in ("clock.sync", "clock.laptop"):
+        short, detail = help_text(hid)
+        assert short and detail, hid
+
+
+def test_clock_sync_labels_exist():
+    for key in ("action.sync_clock", "clock.title", "clock.offset", "clock.working", "clock.done",
+                "clock.failed", "clock.sync_now", "clock.set_laptop", "clock.warning"):
+        assert label(key) != key, key
