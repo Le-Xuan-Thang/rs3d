@@ -21,6 +21,7 @@ line under **Unreleased** in the same commit or pull request that makes it.
 - Status → Clock now compares the Shake's time with the laptop's, and says which one looks wrong.
 - **Sync clock** button on the Status page: **Sync now** restarts the Shake's time service (laptop or Wi-Fi time source); **Set from laptop** copies the laptop's UTC time to the Shake. Every attempt is logged in `logs/clock-sync.log`.
 - Status → Clock explains when the laptop's own clock looks wrong (before 2025), and offers no fix in that case.
+- Live page: a **Helicorder** mode shows today (UTC) as 48 rows of 30 minutes for the chosen channel, with a scale selector and shaded events. At start-up it is filled from the Shake's own archive, then grows live. **Open on Helicorder page** shows the same day with units, filter and zoom.
 
 ### Changed
 - Documentation: `docs/Manual.odt` regenerated; `data/` (downloaded miniSEED files) is now ignored by git.
@@ -29,3 +30,4 @@ line under **Unreleased** in the same commit or pull request that makes it.
 - The detector stays silent for the first LTA seconds after the app starts or after a gap in the data, so a shake in
   that time is not reported.
 - Not yet tried against the real Shake: live banner, Data page scan and helicorder shading in a browser.
+- The live helicorder shows counts only (no filter or physical units). Not yet tried against the real Shake in a browser.

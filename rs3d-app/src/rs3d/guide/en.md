@@ -39,6 +39,8 @@ Hover a **(?)** for a hint, click it for the full explanation and fix.
 
 Three channels in real time. Choose the window (30 s, 60 s, 5 min), switch the 1–10 Hz filter on or off, pause, and use **Save this segment** to open the same range on the Data page.
 
+Switch to **Helicorder** to see today (UTC) as 48 rows of 30 minutes. Choose the channel and scale; events are shaded. When the app starts it copies today's data from the Shake's archive, so the day is already filled; if the Shake cannot be reached it starts empty and fills from the live stream. A new day starts at 00:00 UTC. This view shows counts only; **Open on Helicorder page** gives the same day with units, filter and zoom (it reads the files in the local store, so download today's data first to see the newest minutes).
+
 ## 5. Data
 
 1. Choose **Start** and **End**, use **Presets**, or drag on the coverage bar.
