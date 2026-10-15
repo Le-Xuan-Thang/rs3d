@@ -23,6 +23,11 @@ def wired_candidates() -> list[str]:
             if i.is_up and not i.name.lower().startswith(_NOT_WIRED)]
 
 
+def log_warning(error: str) -> str:
+    """Status-page line when events cannot be saved; '' when all is well."""
+    return label("events.log_error").format(error=error) if error else ""
+
+
 def register(state: AppState) -> None:
     @ui.page("/status")
     def status_page() -> None:
@@ -39,6 +44,7 @@ def register(state: AppState) -> None:
         rows = ui.column().classes("gap-0 w-full max-w-2xl")
         with rows:
             ui.spinner()
+        warning = ui.label("").classes("text-sm text-negative")
         stamp = {"t": 0.0}
 
         def render(checks: list[Check]) -> None:
@@ -67,6 +73,7 @@ def register(state: AppState) -> None:
         def tick_label() -> None:
             if stamp["t"]:
                 updated.text = f"{int(time.monotonic() - stamp['t'])} s ago"
+            warning.text = log_warning(state.events.error)
 
         ui.timer(0.1, refresh, once=True)
         ui.timer(30, refresh)

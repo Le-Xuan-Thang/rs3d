@@ -97,3 +97,11 @@ def test_day_spans_filters_by_channel():
     events = [Event(1.0, 2.0, 5.0, 1.0, "EHZ", "live"), Event(3.0, 4.0, 5.0, 1.0, "EHN", "scan")]
     assert day_spans(events, "EHZ") == [(1.0, 2.0)]
     assert day_spans(events, "EHE") == []
+
+
+from rs3d.app.pages.status import log_warning
+
+
+def test_log_warning():
+    assert log_warning("") == ""
+    assert "disk full" in log_warning("disk full")
