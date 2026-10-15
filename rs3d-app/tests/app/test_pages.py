@@ -35,6 +35,7 @@ def test_live_page_controls():
         await user.open("/live")
         await user.should_see("Filter")
         await user.should_see("Save this segment")
+        await user.should_see("Hz")
     run(scenario)
 
 

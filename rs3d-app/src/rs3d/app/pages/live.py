@@ -9,8 +9,23 @@ from rs3d.app.state import CHANNELS, AppState
 from rs3d.app.strings import label
 from rs3d.app.widgets import frame, help_icon
 
-WINDOWS = {30: "30 s", 60: "60 s", 300: "5 min"}
+WINDOWS = {30: "30 s", 60: "60 s", 300: "5 min", 600: "10 min"}  # the ring buffer keeps 10 min
 LIVE_FILTER = (1.0, 10.0)
+
+
+def status_text(state_key: str, stale: bool, error: str) -> str:
+    """Connection line: while reconnecting, also say why (e.g. connection refused)."""
+    if state_key == "live" and stale:
+        state_key = "waiting"
+    text = label(f"live.{state_key}")
+    return f"{text} ({error})" if state_key == "reconnecting" and error else text
+
+
+def band_for(enabled: bool, fmin: float | None, fmax: float | None) -> tuple[float, float] | None:
+    """The band-pass to apply, or None when it is off or the two numbers are not a valid band."""
+    if not enabled or not fmin or not fmax or fmin <= 0 or fmax <= fmin:
+        return None
+    return float(fmin), float(fmax)
 
 
 def register(state: AppState) -> None:
@@ -28,6 +43,9 @@ def register(state: AppState) -> None:
             with ui.row().classes("items-center gap-1"):
                 flt = ui.switch(label("live.filter"), value=True)
                 help_icon("live_filter")
+            fmin = ui.number(value=LIVE_FILTER[0], min=0.01, step=0.5, format="%.2f").props("dense").classes("w-20")
+            fmax = ui.number(value=LIVE_FILTER[1], min=0.02, step=0.5, format="%.2f").props("dense").classes("w-20")
+            ui.label("Hz")
             pause = ui.button(label("action.pause"), icon="pause").props("flat dense no-caps")
             ui.button(label("action.save_segment"), icon="content_cut", on_click=lambda: save_segment()) \
                 .props("flat dense no-caps")
@@ -44,17 +62,14 @@ def register(state: AppState) -> None:
         pause.on_click(toggle_pause)
 
         def tick() -> None:
-            state_key = stream.state
-            if stream.state == "live" and stream.is_stale():
-                state_key = "waiting"
-            status.text = label(f"live.{state_key}")
+            status.text = status_text(stream.state, stream.is_stale(), stream.error)
             if view["paused"]:
                 return
             end = stream.buffer.latest()
             if end is None:
                 return
             seconds = window.value
-            bandpass = LIVE_FILTER if flt.value else None
+            bandpass = band_for(flt.value, fmin.value, fmax.value)
             snaps = {ch: stream.buffer.snapshot(ch, seconds, end, max_points=1500, bandpass=bandpass)
                      for ch in CHANNELS}
             set_live_data(chart.options, snaps, (end - seconds, end))
