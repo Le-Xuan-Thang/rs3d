@@ -59,3 +59,45 @@ def test_error_clears_after_a_good_write(tmp_path):
     s = EventStore(tmp_path / "sub" / "events.jsonl")
     s.error = "old"
     assert s.append(ev(1)) and s.error == ""
+
+
+def test_read_never_raises_on_bad_lines(tmp_path):
+    p = tmp_path / "events.jsonl"
+    s = EventStore(p)
+    s.append(ev(100))
+    full = '"end": 1, "peak_ratio": 1.0, "peak_amplitude": 1.0, "channel": "EHZ", "source": "live"'
+    with open(p, "ab") as f:
+        f.write(b"\xff\xfe not utf8\n")
+        f.write(('{"start": null, %s}\n' % full).encode())
+        f.write(('{"start": "x", %s}\n' % full).encode())
+        f.write(('{"start": true, %s}\n' % full).encode())
+        f.write(b'[1, 2]\n')
+        f.write(b'{"start": 1, "end": 2, "peak_ratio": 1, "peak_amplitude": 1, "channel": 5, "source": "live"}\n')
+    s.append(ev(300))
+    assert [e.start for e in s.latest(10)] == [300, 100]
+    assert s.skipped == 6
+    assert [e.start for e in s.events_between(0, 1000)] == [100, 300]
+
+
+def test_state_builds_with_bad_events_file(tmp_path):
+    from tests.app.test_state_events import make
+    (tmp_path / "events.jsonl").write_bytes(b'\xff\xfe\n{"start": null}\n')
+    assert make(tmp_path).recent_events is not None
+
+
+def test_unreadable_file_aborts_replace(tmp_path):
+    import os
+    import pytest
+    if os.geteuid() == 0:
+        pytest.skip("root ignores file modes")
+    p = tmp_path / "events.jsonl"
+    s = EventStore(p)
+    s.append(ev(1000, src="live"))
+    p.chmod(0o000)
+    try:
+        assert s.replace_scan_events(0, 86400, [ev(5, src="scan")]) is False
+        assert "cannot read" in s.error and "write" not in s.error
+        assert s.latest(5) == [] and s.events_between(0, 9999) == []
+    finally:
+        p.chmod(0o644)
+    assert [e.start for e in s.latest(5)] == [1000]
