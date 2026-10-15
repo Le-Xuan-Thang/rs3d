@@ -167,7 +167,9 @@ log_error = "Cannot write the event log ({error}). Events are shown but not save
 [labels.clock]
 title = "Fix the Shake's clock"
 offset = "Shake clock"
-working = "Working… (up to 30 s)"
+shake_time = "Shake"
+laptop_time = "Laptop"
+working = "Working… (about 30 s)"
 done = "Done. The Shake clock is now within 1 s of the laptop."
 failed = "That did not work:"
 sync_now = "Sync now"

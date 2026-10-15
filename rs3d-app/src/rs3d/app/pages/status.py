@@ -12,7 +12,7 @@ from rs3d.app.state import AppState
 from rs3d.app.strings import label
 from rs3d.app.widgets import frame, help_icon, level_icon
 from rs3d.core import netcheck
-from rs3d.core.clock import log_sync, measure_offset, offset_text, set_from_laptop, sync_now
+from rs3d.core.clock import log_sync, measure_offset, offset_text, set_from_laptop, sync_now, utc_text
 from rs3d.core.shell import ShellError
 from rs3d.core.models import Check
 
@@ -46,8 +46,14 @@ def register(state: AppState) -> None:
         rows = ui.column().classes("gap-0 w-full max-w-2xl")
         with rows:
             ui.spinner()
+        dialog_host = ui.element()  # outside `rows`: a page refresh rebuilds `rows` and must not delete an open dialog
         warning = ui.label("").classes("text-sm text-negative")
         stamp = {"t": 0.0}
+
+        def open_dialog(make, *args) -> None:
+            dialog_host.clear()
+            with dialog_host:
+                make(*args)
 
         def render(checks: list[Check]) -> None:
             rows.clear()
@@ -59,14 +65,14 @@ def register(state: AppState) -> None:
                         ui.label(c.value).classes("text-grey-8 font-mono text-sm grow")
                         help_icon(c.help_id or c.id)
                         if c.action == "set_ip":
-                            ui.button(label("action.set_ip"), on_click=lambda: set_ip_dialog(refresh)) \
+                            ui.button(label("action.set_ip"), on_click=lambda: open_dialog(set_ip_dialog, refresh)) \
                                 .props("dense unelevated")
                         elif c.action == "download":
                             ui.button(label("action.download"), on_click=lambda: ui.navigate.to("/data")) \
                                 .props("dense flat")
                         elif c.action == "sync_clock":
                             ui.button(label("action.sync_clock"),
-                                      on_click=lambda: sync_clock_dialog(state, device, refresh)) \
+                                      on_click=lambda: open_dialog(sync_clock_dialog, state, device, refresh)) \
                                 .props("dense unelevated")
 
         async def refresh() -> None:
@@ -128,7 +134,7 @@ def sync_clock_dialog(state: AppState, device, after) -> None:
     log_path = state.paths.logs / "clock-sync.log"
     with ui.dialog() as dialog, ui.card().classes("min-w-96 max-w-xl"):
         ui.label(label("clock.title")).classes("text-base font-bold")
-        info = ui.label("").classes("font-mono text-sm")
+        info = ui.label("").classes("font-mono text-sm").style("white-space: pre-line")
         ui.label(label("clock.warning")).classes("text-xs text-grey-7")
         result = ui.label("").classes("text-sm")
         with ui.row():
@@ -162,7 +168,10 @@ def sync_clock_dialog(state: AppState, device, after) -> None:
     async def show() -> None:
         try:
             offset = await run.io_bound(work, measure_offset)
-            info.text = f"{label('clock.offset')}: {offset_text(offset)}"
+            now = time.time()
+            info.text = "\n".join([f"{label('clock.shake_time')}: {utc_text(now + offset)}",
+                                  f"{label('clock.laptop_time')}: {utc_text(now)}",
+                                  offset_text(offset)])
         except (ShellError, ValueError) as exc:
             info.text = str(exc)
 
