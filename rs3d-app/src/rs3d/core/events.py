@@ -64,6 +64,7 @@ class EventDetector:
         self._source = source
         self._open: dict | None = None
         self._last_t: float | None = None
+        self._closed = False
         self._lock = threading.RLock()  # the live thread feeds while the UI thread may flush
         self._reset()
 
@@ -89,7 +90,8 @@ class EventDetector:
 
     def feed(self, tr: Trace) -> None:
         with self._lock:
-            self._feed(tr)
+            if not self._closed:
+                self._feed(tr)
 
     def _feed(self, tr: Trace) -> None:
         s = self.settings
@@ -148,6 +150,12 @@ class EventDetector:
         """Close an event in progress at the last sample seen (end of data, a gap, new settings)."""
         with self._lock:
             self._close(self._last_t)
+
+    def close(self) -> None:
+        """Flush, then ignore every later feed (for a detector that has been replaced or abandoned)."""
+        with self._lock:
+            self.flush()
+            self._closed = True
 
 
 def detect(data: Trace | Stream, settings: EventSettings) -> list[Event]:

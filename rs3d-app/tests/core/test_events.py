@@ -134,3 +134,14 @@ def test_real_file_gives_a_plausible_number_of_events():
     events = detect(st, EventSettings())
     assert 1 <= len(events) < 200
     assert all(e.end > e.start and e.peak_ratio > 3.95 for e in events)
+
+
+def test_closed_detector_is_inert():
+    out = []
+    d = EventDetector(EventSettings(), out.append)
+    d.feed(make(200, burst=(150, 199.9), amp=5000))
+    assert d.active
+    d.close()
+    assert len(out) == 1 and not d.active
+    d.feed(make(300, burst=(120, 130), start=T0 + 1000))
+    assert len(out) == 1 and not d.active

@@ -103,7 +103,7 @@ class AppState:
         for stream in self._live.values():
             old = stream.detector
             if old is not None:
-                old.flush()  # an event in progress ends here and is logged
+                old.close()  # an event in progress ends here and is logged; a packet already in flight is ignored
             stream.detector = self._new_detector()  # warm-up starts again with the new values
         self.save_settings()
         return ""
@@ -180,6 +180,9 @@ class AppState:
         stream = self._live.pop(host, None)
         if stream:
             stream.stop()
+            flush = getattr(stream.detector, "flush", None)
+            if callable(flush):
+                flush()  # an event still open when the stream stops is closed and logged
 
     def stop_all(self) -> None:
         for host in list(self._live):

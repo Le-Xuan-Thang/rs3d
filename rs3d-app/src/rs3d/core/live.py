@@ -141,7 +141,7 @@ class LiveStream:
     def __init__(self, source_factory: Callable[[], Source], buffer: RingBuffer | None = None,
                  sleep: Callable[[float], None] | None = None, detector=None) -> None:
         self.buffer = buffer or RingBuffer()
-        self.detector = detector  # anything with feed(trace); e.g. EventDetector. Replaced by AppState on new settings.
+        self.detector = detector  # anything with feed(trace) and optionally flush(); e.g. EventDetector. Replaced by AppState on new settings.
         self.state = "stopped"  # stopped | connecting | live | reconnecting
         self.error = ""
         self.last_data: float | None = None  # time.monotonic() of the last trace
@@ -177,6 +177,15 @@ class LiveStream:
             except Exception:  # a detector bug must never stop the stream
                 log.exception("event detector failed")
 
+    def _flush_detector(self) -> None:
+        """Close an event left open by a stream that ended (the data after it will not continue it)."""
+        flush = getattr(self.detector, "flush", None)
+        if callable(flush):
+            try:
+                flush()
+            except Exception:
+                log.exception("event detector flush failed")
+
     def is_stale(self, seconds: float = 5.0) -> bool:
         """True when no data arrived recently (ObsPy may be reconnecting inside the source)."""
         return self.last_data is None or time.monotonic() - self.last_data > seconds
@@ -191,6 +200,7 @@ class LiveStream:
                 self.error = "connection closed"
             except Exception as exc:
                 self.error = str(exc) or type(exc).__name__
+            self._flush_detector()
             if self._stop.is_set():
                 break
             if self.state == "live":

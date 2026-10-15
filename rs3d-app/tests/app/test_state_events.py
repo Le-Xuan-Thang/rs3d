@@ -151,3 +151,23 @@ def test_live_channels(tmp_path):
     stream._on_trace(noise(1))
     state._live["h"] = stream
     assert state.live_channels(dev) == {"EHZ"}
+
+
+def test_stop_live_closes_open_event(tmp_path):
+    state = make(tmp_path)
+    stream = LiveStream(lambda: None, detector=state._new_detector())
+    state._live["h"] = stream
+    stream._on_trace(noise(200, burst=(150, 199.9), amp=5000))
+    assert state.event_open is not None
+    state.stop_live("h")
+    assert state.event_open is None and len(state.events.latest(5)) == 1
+
+
+def test_discarded_detector_cannot_open_a_late_event(tmp_path):
+    state = make(tmp_path)
+    stream = LiveStream(lambda: None, detector=state._new_detector())
+    state._live["h"] = stream
+    old = stream.detector
+    state.set_event_settings(EventSettings(on=4.5))
+    old.feed(noise(200, burst=(150, 199.9), amp=5000))  # a packet the live thread already held
+    assert state.event_open is None and not old.active

@@ -155,3 +155,51 @@ def test_detector_failure_does_not_stop_the_stream():
     assert stream.state == "live"
     t, v = stream.buffer.snapshot("EHZ", 10)
     assert len(t) == 200                        # data kept flowing into the ring buffer
+
+
+def test_source_ending_flushes_the_detector():
+    from rs3d.core.events import EventDetector, EventSettings
+    from tests.core.test_events import make
+
+    events = []
+    detector = EventDetector(EventSettings(), events.append)
+    stop_after = threading.Event()
+    made = []
+
+    def factory():
+        if made:
+            stop_after.set()
+            return FakeSource([], fail=ConnectionRefusedError("refused"))
+        src = FakeSource([make(200, burst=(150, 199.9), amp=5000)], fail=ConnectionResetError("cable"))
+        made.append(src)
+        return src
+
+    live = LiveStream(factory, sleep=lambda s: None, detector=detector)
+    live.start()
+    assert stop_after.wait(5)
+    live.stop()
+    assert not detector.active and len(events) == 1
+
+
+def test_flush_failure_is_caught_in_the_loop():
+    class Bad:
+        def feed(self, tr):
+            pass
+
+        def flush(self):
+            raise RuntimeError("boom")
+
+    done = threading.Event()
+
+    def factory():
+        if done.is_set():
+            return FakeSource([], fail=ConnectionRefusedError("x"))
+        done.set()
+        return FakeSource([], fail=ConnectionResetError("x"))
+
+    live = LiveStream(factory, sleep=lambda s: None, detector=Bad())
+    live.start()
+    import time as _t
+    _t.sleep(0.2)
+    assert live._thread.is_alive()
+    live.stop()
