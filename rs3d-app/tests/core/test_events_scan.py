@@ -58,13 +58,13 @@ def test_scan_day_without_data_clears_old_scan_events(tmp_path):
 def test_scan_day_uses_previous_day_for_warmup(tmp_path):  # Review Focus 6
     store, log = Store(tmp_path / "sds"), EventStore(tmp_path / "events.jsonl")
     put(store, MIDNIGHT - 120, 120)                                 # last 2 minutes of the previous day
-    put(store, MIDNIGHT, 120, burst=(30, 40), seed=2)               # shaking 30 s after midnight
+    put(store, MIDNIGHT, 120, burst=(10, 20), seed=2)               # shaking 10 s after midnight
     assert scan_day(store, log, EventSettings(), "AM", "R77A7", "00", DAY) == 1
     e = log.latest(1)[0]
-    assert MIDNIGHT.timestamp <= e.start < MIDNIGHT.timestamp + 40
-    # the same burst with no previous-day data: the detector has no history yet, so it is (correctly) ignored
+    assert MIDNIGHT.timestamp <= e.start < MIDNIGHT.timestamp + 20
+    # the same burst with no previous-day data is inside the warm-up, so it is (correctly) ignored
     store2, log2 = Store(tmp_path / "sds2"), EventStore(tmp_path / "events2.jsonl")
-    put(store2, MIDNIGHT, 120, burst=(30, 40), seed=2)
+    put(store2, MIDNIGHT, 120, burst=(10, 20), seed=2)
     assert scan_day(store2, log2, EventSettings(), "AM", "R77A7", "00", DAY) == 0
 
 
