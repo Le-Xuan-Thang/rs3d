@@ -10,6 +10,7 @@ from obspy import UTCDateTime
 
 from rs3d.app.charts import helicorder_height_px, helicorder_options
 from rs3d.app.detail import DetailContext, DetailPanel, inventory_for
+from rs3d.app.latest import LatestOnly
 from rs3d.app.pages.data import station_choices
 from rs3d.app.state import AppState
 from rs3d.app.strings import label
@@ -43,10 +44,12 @@ def register(state: AppState) -> None:
             return
         ch = channel if channel in channels else channels[0]
         days = state.store.days(net, sta, loc, ch)
+        # "day" is the day being asked for; "shown" is the day whose rows are on screen (clicks map against it)
         ctx = {"day": parse_day(day, max(days) if days else date.today())}
+        ctx["shown"] = ctx["day"]
+        latest = LatestOnly()
 
-        def day_start() -> UTCDateTime:
-            d = ctx["day"]
+        def start_of(d: date) -> UTCDateTime:
             return UTCDateTime(d.year, d.month, d.day)
 
         with ui.row().classes("items-center gap-2"):
@@ -80,24 +83,29 @@ def register(state: AppState) -> None:
         chan.on_value_change(lambda e: navigate(channel=e.value))
 
         async def refresh() -> None:
+            token = latest.next()
             current = state.data_prefs
             band = (current["fmin"], current["fmax"]) if flt.value else None
             u = units.value
-            start = day_start()
+            wanted, channel_now = ctx["day"], chan.value  # snapshot: the worker thread must not see later changes
 
             def work():
                 inv = inventory_for(state, net, sta) if u == "m/s" else None
-                st = load_day(state.store, net, sta, loc, chan.value, ctx["day"], u, band, inv)
-                return build_rows(st, start)
+                st = load_day(state.store, net, sta, loc, channel_now, wanted, u, band, inv)
+                return build_rows(st, start_of(wanted))
 
             try:
                 rows = await run.io_bound(work)
             except Exception as exc:  # e.g. no instrument response while offline
-                ui.notify(str(exc), type="negative", multi_line=True)
-                if u == "m/s":
-                    units.value = "counts"  # triggers a new refresh in counts
+                if latest.is_current(token):
+                    ui.notify(str(exc), type="negative", multi_line=True)
+                    if u == "m/s":
+                        units.value = "counts"  # triggers a new refresh in counts
                 return
-            day_label.text = ctx["day"].isoformat()
+            if not latest.is_current(token):  # a newer load was started meanwhile: drop this result
+                return
+            ctx["shown"] = wanted
+            day_label.text = wanted.isoformat()
             if not any(len(r.values) for r in rows):
                 message.text = label("data.nothing")
                 chart.options.clear()
@@ -123,9 +131,14 @@ def register(state: AppState) -> None:
             if e.series_name != "click":
                 return
             x_minutes, row = float(e.value[0]), int(round(float(e.value[1])))
-            await pick(click_to_time(day_start(), ROW_MINUTES, row, x_minutes / ROW_MINUTES))
+            await pick(click_to_time(start_of(ctx["shown"]), ROW_MINUTES, row, x_minutes / ROW_MINUTES))
 
         chart.on_point_click(on_click)
-        for control in (units, flt, scale):
-            control.on_value_change(lambda _: ui.timer(0.01, refresh, once=True))
+        async def on_settings(_=None) -> None:
+            await refresh()
+            await detail.reload_if_open()  # the open detail view follows units and band-pass
+
+        scale.on_value_change(lambda _: ui.timer(0.01, refresh, once=True))
+        for control in (units, flt):
+            control.on_value_change(lambda _: ui.timer(0.01, on_settings, once=True))
         ui.timer(0.1, refresh, once=True)

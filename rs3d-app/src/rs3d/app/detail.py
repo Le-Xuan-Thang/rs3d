@@ -12,6 +12,7 @@ from obspy import Stream, UTCDateTime
 
 from rs3d.app import timeutil
 from rs3d.app.charts import set_stream_data, spectrogram_options, spectrum_options, waveform_options
+from rs3d.app.latest import LatestOnly
 from rs3d.app.state import AppState
 from rs3d.app.strings import label
 from rs3d.core.export import clipboard_title, write_clipboard_png
@@ -31,6 +32,24 @@ class DetailContext:
     units: str
     band: tuple[float, float] | None
     use_utc: bool
+
+
+@dataclass(frozen=True)
+class Loaded:
+    """What is on screen: the data, and the context and window it was loaded with."""
+
+    ctx: DetailContext
+    window: tuple[UTCDateTime, UTCDateTime]
+    stream: Stream
+
+
+def detail_title(ctx: DetailContext, window: tuple[UTCDateTime, UTCDateTime]) -> str:
+    a, b = window
+    text = (f"{ctx.net}.{ctx.sta}.{ctx.loc}.{ctx.channel}  "
+            f"{timeutil.to_text(a, not ctx.use_utc)} → {timeutil.to_text(b, not ctx.use_utc)}  {ctx.units}")
+    if ctx.band is not None:
+        text += f"  band-pass {ctx.band[0]:g}–{ctx.band[1]:g} Hz"
+    return text
 
 
 def inventory_for(state: AppState, net: str, sta: str):
@@ -63,7 +82,8 @@ class DetailPanel:
         self.origin: tuple[UTCDateTime, UTCDateTime] | None = None
         self.window: tuple[UTCDateTime, UTCDateTime] | None = None
         self.mode = "waveform"
-        self.stream: Stream | None = None
+        self.loaded: Loaded | None = None
+        self._latest = LatestOnly()
         with ui.card().classes("w-full") as self.card:
             with ui.row().classes("items-center gap-1"):
                 self.title = ui.label("").classes("font-mono text-sm")
@@ -87,37 +107,43 @@ class DetailPanel:
         self.card.set_visibility(False)
 
     async def open(self, center: UTCDateTime, span: float = 120.0) -> None:
-        self.origin = (center - span / 2, center + span / 2)
-        self.window = self.origin
-        self.card.set_visibility(True)
-        await self.reload()
+        window = (center - span / 2, center + span / 2)
+        if await self.load(window):
+            self.origin = window
+            self.card.set_visibility(True)
 
     def close(self) -> None:
         self.card.set_visibility(False)
 
     async def fit(self) -> None:
         if self.origin:
-            self.window = self.origin
-            await self.reload()
+            await self.load(self.origin)
 
     async def zoom(self, factor: float) -> None:
         if self.window:
-            self.window = zoom_window(*self.window, factor)
-            await self.reload()
+            await self.load(zoom_window(*self.window, factor))
 
     async def shift(self, direction: int) -> None:
         if self.window:
-            self.window = shift_window(*self.window, direction)
+            await self.load(shift_window(*self.window, direction))
+
+    async def reload(self) -> None:
+        """Load the current window again, with the page's current units and band-pass."""
+        if self.window:
+            await self.load(self.window)
+
+    async def reload_if_open(self) -> None:
+        if self.card.visible:
             await self.reload()
 
     def set_mode(self, _=None) -> None:
         self.mode = self.toggle.value
         self.draw()
 
-    async def reload(self) -> None:
-        if self.window is None:
-            return
-        ctx, (a, b) = self.get_ctx(), self.window
+    async def load(self, window: tuple[UTCDateTime, UTCDateTime]) -> bool:
+        """Load `window`; the panel only changes (window, data, chart) when this load succeeds and is the newest."""
+        token = self._latest.next()
+        ctx, (a, b) = self.get_ctx(), window
 
         def work() -> Stream:
             inv = inventory_for(self.state, ctx.net, ctx.sta) if ctx.units == "m/s" else None
@@ -125,31 +151,43 @@ class DetailPanel:
                                ctx.units, ctx.band, inv)
 
         try:
-            self.stream = await run.io_bound(work)
+            st = await run.io_bound(work)
+        except Exception as exc:
+            if self._latest.is_current(token):
+                ui.notify(str(exc), type="negative", multi_line=True)
+            return False
+        if not self._latest.is_current(token):
+            return False
+        self.window = window
+        self.loaded = Loaded(ctx, window, st)
+        self.draw()
+        return True
+
+    async def save_clipboard(self) -> Path | None:
+        """Render the clipboard PNG for what is on screen and offer it for download; None if it cannot be made."""
+        if self.loaded is None:
+            return None
+        ctx, (a, b), st = self.loaded.ctx, self.loaded.window, self.loaded.stream.select(channel=self.loaded.ctx.channel)
+        title = clipboard_title(ctx.net, ctx.sta, ctx.loc, ctx.channel, a, b, ctx.units, ctx.band)
+        out = Path(tempfile.mkdtemp()) / f"{ctx.net}.{ctx.sta}.{ctx.channel}_{a.strftime('%Y%m%dT%H%M%S')}.png"
+        try:
+            await run.io_bound(write_clipboard_png, st, out, title, ctx.units)
         except Exception as exc:
             ui.notify(str(exc), type="negative", multi_line=True)
-            return
-        self.draw()
+            return None
+        ui.download.file(out, out.name)
+        return out
 
     def open_clipboard(self) -> None:
-        """Dialog with waveform, spectrogram and spectrum of the current window; the camera saves a PNG."""
-        if self.stream is None or self.window is None:
+        """Dialog with waveform, spectrogram and spectrum of what is on screen; the camera saves a PNG."""
+        if self.loaded is None:
             return
-        ctx, (a, b) = self.get_ctx(), self.window
-        st = self.stream.select(channel=ctx.channel)
+        ctx, st = self.loaded.ctx, self.loaded.stream.select(channel=self.loaded.ctx.channel)
         with ui.dialog() as dialog, ui.card().classes("w-full max-w-6xl"):
             with ui.row().classes("items-center w-full"):
                 ui.label(label("clipboard.title")).classes("text-lg font-bold")
                 ui.space()
-
-                async def save() -> None:
-                    title = clipboard_title(ctx.net, ctx.sta, ctx.loc, ctx.channel, a, b, ctx.units, ctx.band)
-                    name = f"{ctx.net}.{ctx.sta}.{ctx.channel}_{a.strftime('%Y%m%dT%H%M%S')}.png"
-                    out = Path(tempfile.mkdtemp()) / name
-                    await run.io_bound(write_clipboard_png, st, out, title, ctx.units)
-                    ui.download.file(out, out.name)
-
-                ui.button(icon="photo_camera", on_click=save).props("flat round data-testid=camera") \
+                ui.button(icon="photo_camera", on_click=self.save_clipboard).props("flat round data-testid=camera") \
                     .tooltip(label("clipboard.camera"))
                 ui.button(icon="close", on_click=dialog.close).props("flat round")
             for mode, height in (("waveform", "22vh"), ("spectrogram", "26vh"), ("spectra", "26vh")):
@@ -161,13 +199,11 @@ class DetailPanel:
         dialog.open()
 
     def draw(self) -> None:
-        if self.window is None or self.stream is None:
+        if self.loaded is None:
             return
-        ctx = self.get_ctx()
-        a, b = self.window
-        self.title.text = (f"{ctx.net}.{ctx.sta}.{ctx.loc}.{ctx.channel}  "
-                           f"{timeutil.to_text(a, not ctx.use_utc)} → {timeutil.to_text(b, not ctx.use_utc)}")
-        options = detail_chart_options(self.mode, self.stream, ctx.channel, ctx.use_utc)
+        ctx, window, st = self.loaded.ctx, self.loaded.window, self.loaded.stream
+        self.title.text = detail_title(ctx, window)
+        options = detail_chart_options(self.mode, st, ctx.channel, ctx.use_utc)
         if options is None:
             self.message.text = label("detail.no_window_data")
             self.chart.set_visibility(False)

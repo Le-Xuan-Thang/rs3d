@@ -59,6 +59,9 @@ def test_click_a_row_and_save_the_clipboard(server, three_hours, tmp_path):  # n
                 layers = charts.nth(i).locator("canvas")
                 painted.append(max(layers.nth(j).evaluate(PAINTED) for j in range(layers.count())))
         assert len(painted) == 2 and all(n > 500 for n in painted), painted  # detail chart + helicorder
+        # turning the band-pass on while the detail is open reloads it, and the title says so
+        page.get_by_text("Band-pass", exact=True).first.click()
+        page.locator(".font-mono").filter(has_text="band-pass 1–10 Hz").first.wait_for(timeout=15000)
         page.locator("[data-testid=clipboard]").click()
         with page.expect_download(timeout=30000) as dl:
             page.locator("[data-testid=camera]").click()
