@@ -34,7 +34,7 @@ def free_port(preferred: int = 8765) -> int:
 
 
 def run(port: int | None = None, show: bool = True, native: bool = False) -> None:
-    state = AppState(AppPaths.default())
+    state = AppState(AppPaths.default(), preload=True)
     build(state)
     ui.run(title="RS3D", host="127.0.0.1", port=port or free_port(), show=show, native=native,
            reload=False, favicon="🌍", show_welcome_message=True)

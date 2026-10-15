@@ -3,20 +3,24 @@
 from __future__ import annotations
 
 import logging
+import threading
 import tomllib
 from collections import deque
 from dataclasses import asdict, fields
+from datetime import datetime, timezone
 
 import tomli_w
 
+from rs3d.core.day_trace import DayTrace
 from rs3d.core.devices import DeviceRegistry, Passwords
 from rs3d.core.events import Event, EventDetector, EventSettings, validate_settings
 from rs3d.core.events_store import EventStore
 from rs3d.core.live import LiveStream
 from rs3d.core.models import Check, Device
 from rs3d.core.paths import AppPaths
+from rs3d.core.preload import preload_today
 from rs3d.core.seedlink import SeedLinkSource
-from rs3d.core.shell import Shell
+from rs3d.core.shell import Shell, ShellError
 from rs3d.core.status import run_checks
 from rs3d.core.store import Store
 
@@ -62,7 +66,8 @@ def _clean_event_settings(raw) -> EventSettings:
 
 
 class AppState:
-    def __init__(self, paths: AppPaths, passwords: Passwords | None = None) -> None:
+    def __init__(self, paths: AppPaths, passwords: Passwords | None = None, preload: bool = False) -> None:
+        self.preload = preload  # fill the live helicorder from the Shake's archive when a stream starts
         self.paths = paths.ensure()
         self.registry = DeviceRegistry(paths.config)
         self.passwords = passwords or Passwords()
@@ -79,6 +84,7 @@ class AppState:
         devices = self.registry.load()
         self.current_host: str | None = settings.get("current_host") or (devices[0].host if devices else None)
         self._live: dict[str, LiveStream] = {}
+        self._days: dict[str, DayTrace] = {}
 
     # ---------------------------------------------------------------- settings
     def save_settings(self) -> None:
@@ -149,6 +155,19 @@ class AppState:
             self.live(device)
         except Exception:
             log.exception("could not start the live stream for %s", device.host)
+            return
+        if self.preload:
+            threading.Thread(target=self._preload, args=(device,), name="rs3d-preload", daemon=True).start()
+
+    def _preload(self, device: Device) -> None:
+        """Fill today's helicorder from the Shake's archive. Runs in a thread and never raises."""
+        try:
+            with self.shell(device) as sh:
+                preload_today(sh.sftp(), self.store, device, self.day_trace(device), CHANNELS)
+        except ShellError as exc:
+            log.warning("live helicorder: cannot reach %s for the archive: %s", device.host, exc)
+        except Exception:
+            log.exception("live helicorder preload failed")
 
     def save_device(self, device: Device, password: str | None = None) -> None:
         self.registry.upsert(device)
@@ -185,10 +204,17 @@ class AppState:
         if stream is None:
             stream = LiveStream(lambda: SeedLinkSource(device.host, device.seedlink_port, device.network,
                                                        device.station, CHANNELS),
-                                detector=self._new_detector())
+                                detector=self._new_detector(), day_trace=self.day_trace(device))
             self._live[device.host] = stream
         stream.start()
         return stream
+
+    def day_trace(self, device: Device) -> DayTrace:
+        """Today's min/max data of this Shake (the live helicorder); one per Shake, created on first use."""
+        trace = self._days.get(device.host)
+        if trace is None:
+            trace = self._days[device.host] = DayTrace(datetime.now(timezone.utc).date())
+        return trace
 
     def stop_live(self, host: str) -> None:
         stream = self._live.pop(host, None)

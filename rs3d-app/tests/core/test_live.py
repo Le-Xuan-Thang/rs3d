@@ -203,3 +203,18 @@ def test_flush_failure_is_caught_in_the_loop():
     _t.sleep(0.2)
     assert live._thread.is_alive()
     live.stop()
+
+
+def test_stream_feeds_the_day_trace_and_survives_its_failure(caplog):
+    from obspy import Trace
+    seen = []
+
+    class Sink:
+        def add(self, tr):
+            seen.append(tr)
+            raise RuntimeError("boom")
+
+    stream = LiveStream(lambda: None, day_trace=Sink())
+    stream._on_trace(Trace(np.zeros(10), header={"sampling_rate": 100.0, "channel": "EHZ"}))
+    assert len(seen) == 1 and stream.buffer.latest() is not None  # the buffer still got the data
+    assert "day trace failed" in caplog.text

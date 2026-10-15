@@ -139,9 +139,10 @@ class LiveStream:
     """Keeps a Source running in a daemon thread; reconnects with backoff when it fails."""
 
     def __init__(self, source_factory: Callable[[], Source], buffer: RingBuffer | None = None,
-                 sleep: Callable[[float], None] | None = None, detector=None) -> None:
+                 sleep: Callable[[float], None] | None = None, detector=None, day_trace=None) -> None:
         self.buffer = buffer or RingBuffer()
         self.detector = detector  # anything with feed(trace) and optionally flush(); e.g. EventDetector. Replaced by AppState on new settings.
+        self.day_trace = day_trace  # anything with add(trace); e.g. DayTrace, the data of the live helicorder
         self.state = "stopped"  # stopped | connecting | live | reconnecting
         self.error = ""
         self.last_data: float | None = None  # time.monotonic() of the last trace
@@ -170,6 +171,11 @@ class LiveStream:
         self.state = "live"
         self.last_data = time.monotonic()
         self.buffer.add(tr)
+        if self.day_trace is not None:
+            try:
+                self.day_trace.add(tr)
+            except Exception:  # the helicorder must never stop the stream
+                log.exception("day trace failed")
         detector = self.detector
         if detector is not None:
             try:

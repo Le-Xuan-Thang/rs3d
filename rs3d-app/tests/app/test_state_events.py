@@ -214,3 +214,59 @@ def test_recent_events_seed_only_live_events(tmp_path):
 def test_found_label_reads_for_one():
     from rs3d.app.strings import label
     assert label("events.found").format(n=1) == "1 event(s)"
+
+
+def test_live_stream_feeds_the_day_trace(tmp_path):
+    from rs3d.core.models import Device
+    state = make(tmp_path)
+    device = Device(name="a", host="ha")
+    stream = state.live(device)
+    stream.stop()
+    assert stream.day_trace is state.day_trace(device)
+    assert state.day_trace(device) is state.day_trace(device)
+    assert state.day_trace(Device(name="b", host="hb")) is not state.day_trace(device)
+
+
+def test_start_current_preloads_only_when_asked(tmp_path, monkeypatch):
+    import sys
+    import threading
+    from rs3d.core.models import Device
+    done = threading.Event()
+    seen = []
+    monkeypatch.setattr(sys.modules[AppState.__module__], "preload_today",
+                        lambda sftp, store, dev, dt, ch: seen.append((dev.host, ch)) or done.set())
+
+    class FakeShell:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            pass
+
+        def sftp(self):
+            return object()
+
+    quiet = make(tmp_path / "quiet")
+    quiet.registry.upsert(Device(name="a", host="ha"))
+    monkeypatch.setattr(quiet, "live", lambda d: None)
+    quiet.start_current()
+    assert not done.wait(0.3) and seen == []
+
+    loud = AppState(AppPaths(tmp_path / "loud"), passwords=Passwords(NoKeyring()), preload=True)
+    loud.registry.upsert(Device(name="a", host="ha"))
+    monkeypatch.setattr(loud, "live", lambda d: None)
+    monkeypatch.setattr(loud, "shell", lambda d: FakeShell())
+    loud.start_current()
+    assert done.wait(2) and seen == [("ha", ("EHZ", "EHN", "EHE"))]
+
+
+def test_preload_failure_does_not_raise(tmp_path, monkeypatch, caplog):
+    from rs3d.core.models import Device
+    from rs3d.core.shell import ShellError
+    state = AppState(AppPaths(tmp_path), passwords=Passwords(NoKeyring()), preload=True)
+
+    def refuse(device):
+        raise ShellError("unreachable", "no route")
+    monkeypatch.setattr(state, "shell", refuse)
+    state._preload(Device(name="a", host="ha"))  # must not raise
+    assert "no route" in caplog.text
