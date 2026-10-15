@@ -151,8 +151,8 @@ def register(state: AppState) -> None:
                            icon="download" if is_device else "visibility").props("unelevated")
 
         # ------------------------------------------------------------ 3. preview / 4. export
-        progress = ui.label("").classes("text-sm text-grey-7")
-        status = {"text": ""}  # written by the worker thread, shown by a UI timer
+        progress = ui.label(label("data.hint")).classes("text-sm text-grey-7")
+        status = {"text": label("data.hint")}  # written by the worker thread, shown by a UI timer
         ui.timer(0.3, lambda: setattr(progress, "text", status["text"]))
         preview = ui.echart(waveform_options(channels, use_utc=not state.use_local_time)) \
             .classes("w-full").style("height: 48vh")
