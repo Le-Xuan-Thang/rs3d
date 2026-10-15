@@ -6,13 +6,13 @@ import socket
 
 from nicegui import app, ui
 
-from rs3d.app.pages import data, guide, live, settings, status
+from rs3d.app.pages import data, guide, helicorder, live, settings, status
 from rs3d.app.state import AppState
 from rs3d.core.paths import AppPaths
 
 
 def build(state: AppState) -> None:
-    for page in (status, live, data, guide, settings):
+    for page in (status, live, helicorder, data, guide, settings):
         page.register(state)
 
     @ui.page("/")

@@ -79,3 +79,37 @@ def test_data_page_remembers_band_pass_choice(tmp_path):
         await user.open("/data?start=1791831600&end=1791835200")
         assert user.find(kind=ui.switch).elements.pop().value is True
     run(scenario)
+
+
+def _write_day(tmp_path):
+    """Ten minutes of EHZ on 2026-10-12 in the app's store."""
+    import numpy as np
+    from obspy import Trace, UTCDateTime
+    from rs3d.core.store import Store
+    tr = Trace(np.random.default_rng(0).integers(-500, 500, 60000).astype("int32"),
+               header={"network": "AM", "station": "R77A7", "location": "00", "channel": "EHZ",
+                       "sampling_rate": 100.0, "starttime": UTCDateTime("2026-10-12T00:00:00")})
+    path = tmp_path / "10min.mseed"
+    tr.write(str(path), format="MSEED")
+    Store(tmp_path / "sds").import_file(path)
+
+
+def test_helicorder_page_is_in_the_nav_and_shows_empty_message():
+    async def scenario(user):
+        await user.open("/helicorder")
+        await user.should_see("Helicorder")
+        await user.should_see("No data yet")
+    run(scenario)
+
+
+def test_helicorder_page_shows_requested_day_and_arrows_move_it(tmp_path):
+    _write_day(tmp_path)
+
+    async def scenario(user):
+        await user.open("/helicorder?day=2026-10-12")
+        await user.should_see("2026-10-12")
+        user.find(marker="day-next").click()
+        await user.should_see("2026-10-13")
+        user.find(marker="day-prev").click()
+        await user.should_see("2026-10-12")
+    run(scenario)
