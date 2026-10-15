@@ -74,6 +74,19 @@ def test_all_checks_on_real_output():
     assert c["archive"].level is Level.WARN and "keeps 7 days" in c["archive"].value
 
 
+@pytest.mark.parametrize("date_output", ["garbage", ""])
+def test_unusable_date_output_falls_back_to_ntpq(date_output):
+    c = checks(shell_factory=lambda d, p: FakeShell(date=date_output))
+    assert c["clock"].level is Level.OK and "ms via" in c["clock"].value
+
+
+def test_wrong_laptop_clock_is_reported():
+    old = 1_700_000_000.0
+    c = checks(now=lambda: old, shell_factory=lambda d, p: FakeShell(date=f"{old:.9f}"))
+    assert c["clock"].level is Level.WARN and c["clock"].help_id == "clock.laptop"
+    assert c["clock"].action is None and "laptop" in c["clock"].value
+
+
 def test_laptop_ip_error_skips_everything_else():
     bad = lambda: Check("laptop_ip", Level.ERROR, "no 169.254.x.x address", "laptop_ip", "set_ip")
     c = checks(laptop_ip=bad)

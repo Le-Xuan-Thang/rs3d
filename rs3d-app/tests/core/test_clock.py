@@ -2,7 +2,7 @@ import pytest
 
 from rs3d.core.clock import (
     BIG, T, SyncResult, diagnose, has_selected_source, laptop_clock_ok, log_sync, measure_offset, offset_text,
-    parse_epoch, set_from_laptop, sync_now,
+    parse_epoch, set_from_laptop, sync_now, utc_text,
 )
 from rs3d.core.models import Check, Level
 from rs3d.core.shell import ShellError
@@ -48,6 +48,16 @@ def test_parse_epoch():
     assert parse_epoch("1760544000.123456789\n") == pytest.approx(1760544000.123456789)
     with pytest.raises(ValueError):
         parse_epoch("not a number")
+
+
+@pytest.mark.parametrize("text", ["", "   \n"])
+def test_parse_epoch_empty_output_is_a_value_error(text):
+    with pytest.raises(ValueError, match="empty date output"):
+        parse_epoch(text)
+
+
+def test_utc_text():
+    assert utc_text(1_800_000_000.0) == "2027-01-15 08:00:00 UTC"
 
 
 def test_measure_offset_uses_midpoint():
@@ -100,6 +110,19 @@ def test_diagnose_not_synced_levels_and_thresholds():
     assert big.level is Level.ERROR and big.action == "sync_clock" and "behind" not in big.value and "ahead" in big.value
 
 
+@pytest.mark.parametrize("ntp", [NTP_OK, NTP_NONE])
+def test_diagnose_wrong_laptop_clock_warns_without_action(ntp):
+    c = diagnose(ntp, 400.0, laptop_epoch=1_700_000_000)
+    assert c.level is Level.WARN and c.action is None and c.help_id == "clock.laptop"
+    assert c.value == "this laptop's clock looks wrong (before 2025)"
+    assert diagnose(ntp, None, laptop_epoch=1_700_000_000) is ntp
+
+
+def test_diagnose_good_laptop_epoch_changes_nothing():
+    assert diagnose(NTP_OK, 0.4, laptop_epoch=1_800_000_000) is NTP_OK
+    assert diagnose(NTP_NONE, 0.5, laptop_epoch=1_800_000_000).action == "sync_clock"
+
+
 def test_diagnose_unmeasured_keeps_ntp_result():
     assert diagnose(NTP_NONE, None) is NTP_NONE
 
@@ -130,6 +153,8 @@ def test_sync_now_fails_when_a_source_is_selected_but_the_clock_stays_off():  # 
     sh = FakeShell(clk, ntpq=("*x",), steps=False)
     res = sync_now(sh, clk.now, lambda s: None)
     assert not res.ok and res.after == pytest.approx(-400.0, abs=0.1)
+    assert "found a time source" in res.message and "400 s" in res.message
+    assert "did not find" not in res.message
 
 
 def test_sync_now_command_failure():  # Review Focus 4

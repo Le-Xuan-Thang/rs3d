@@ -172,7 +172,7 @@ def run_checks(
         except json.JSONDecodeError:
             config = {}
         checks = {
-            "clock": lambda: diagnose(clock_check(sections.get("ntpq", "")), offset),
+            "clock": lambda: diagnose(clock_check(sections.get("ntpq", "")), offset, laptop_epoch=now()),
             "internet": lambda: internet_check(sections.get("internet", "")),
             "wifi": lambda: wifi_check(sections.get("wlan", "")),
             "storage": lambda: storage_check(sections.get("df", "")),

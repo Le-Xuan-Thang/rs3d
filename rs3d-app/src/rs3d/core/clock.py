@@ -33,7 +33,15 @@ class SyncResult:
 
 
 def parse_epoch(text: str) -> float:
-    return float(text.strip().splitlines()[-1])
+    lines = text.strip().splitlines()
+    if not lines:
+        raise ValueError("empty date output")
+    return float(lines[-1])
+
+
+def utc_text(epoch: float) -> str:
+    """'2027-01-15 08:00:00 UTC'."""
+    return datetime.fromtimestamp(epoch, timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
 def measure_offset(shell, now: Callable[[], float] = time.time) -> float:
@@ -68,10 +76,15 @@ def offset_text(offset: float) -> str:
     return f"{amount} {'ahead of' if offset > 0 else 'behind'} the laptop"
 
 
-def diagnose(ntp: Check, offset: float | None) -> Check:
-    """Refine the ntpq-only clock check with the Shake-versus-laptop offset (None: could not be measured)."""
+def diagnose(ntp: Check, offset: float | None, *, laptop_epoch: float | None = None) -> Check:
+    """Refine the ntpq-only clock check with the Shake-versus-laptop offset (None: could not be measured).
+
+    A laptop clock that is itself wrong makes the offset meaningless, so that is reported instead, with no fix.
+    """
     if offset is None:
         return ntp
+    if laptop_epoch is not None and not laptop_clock_ok(laptop_epoch):
+        return Check("clock", Level.WARN, "this laptop's clock looks wrong (before 2025)", "clock.laptop")
     synced = ntp.help_id != "clock.nosource"
     size = abs(offset)
     if synced:
@@ -106,6 +119,7 @@ def sync_now(shell, now: Callable[[], float] = time.time,
     except ShellError as exc:
         return SyncResult("sync_now", before, None, False, str(exc))
     after = None
+    synced = False
     for _ in range(POLLS):
         sleep(POLL_SECONDS)
         try:
@@ -115,6 +129,10 @@ def sync_now(shell, now: Callable[[], float] = time.time,
         after = _measure(shell, now)
         if synced and after is not None and abs(after) <= T:
             return SyncResult("sync_now", before, after, True)
+    if synced and after is not None:
+        return SyncResult("sync_now", before, after, False,
+                          f"ntpd found a time source, but the Shake still differs from this laptop by "
+                          f"{abs(after):.0f} s. Check this laptop's clock before using Set from laptop.")
     return SyncResult("sync_now", before, after, False, "ntpd did not find a time source within 30 s")
 
 
