@@ -81,7 +81,7 @@ The panel loads the window from the local archive (`store.load`, `process`) and 
 | Zoom out / in | window ×2 / ×½ around its centre, then reload |
 | ◀ ▶ | shift by half the window, then reload |
 | Waveform / Spectra / Spectrogram | mutually exclusive panel modes |
-| Filter | band-pass on or off (uses the saved band) |
+| Filter | the helicorder page's Band-pass switch (one source of truth); the detail view reads it on every reload |
 | Clipboard | opens the clipboard dialog |
 | Close | hides the panel |
 
