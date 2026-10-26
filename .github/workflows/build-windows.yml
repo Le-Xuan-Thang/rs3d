@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
       - run: uv sync
       - run: uv run python -m pytest -q
 
@@ -23,7 +23,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
       - run: choco install innosetup -y --no-progress
       - run: echo "C:\Program Files (x86)\Inno Setup 6" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
       - run: ./packaging/build_windows.ps1
