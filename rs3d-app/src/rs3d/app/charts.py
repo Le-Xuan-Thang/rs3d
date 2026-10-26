@@ -20,8 +20,14 @@ def _ms(t: UTCDateTime | float) -> float:
 
 
 def _points(times: np.ndarray, values: np.ndarray) -> list[list]:
-    """[[ms, value], ...] with NaN -> None so ECharts breaks the line at gaps."""
-    return [[float(t) * 1000.0, None if np.isnan(v) else float(v)] for t, v in zip(times, values)]
+    """[[ms, value], ...] with NaN -> None so ECharts breaks the line at gaps.
+
+    Times are whole milliseconds and values keep 2 decimals: the same picture in about half the JSON.
+    """
+    values = np.asarray(values, dtype=float)
+    ms = np.rint(np.asarray(times, dtype=float) * 1000.0).astype(np.int64).tolist()
+    vals = np.round(values, 2).tolist()
+    return [[t, None if v != v else v] for t, v in zip(ms, vals)]
 
 
 def waveform_options(channels: tuple[str, ...], use_utc: bool = True) -> dict:

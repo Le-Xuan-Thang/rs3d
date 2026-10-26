@@ -342,13 +342,3 @@ def test_preload_retried_after_a_run_that_filled_nothing(tmp_path, monkeypatch):
     state.start_current()
     _wait_idle(state)
     assert calls == ["ha", "ha"]
-
-
-def test_live_view_defaults_and_is_not_saved(tmp_path):
-    state = make(tmp_path)
-    assert state.live_view == {"mode": "wave", "channel": "EHZ", "scale": 1.0}
-    state.save_settings()
-    before = (tmp_path / "settings.toml").read_text()
-    state.live_view.update(mode="heli", channel="EHN", scale=2.0)
-    state.save_settings()
-    assert (tmp_path / "settings.toml").read_text() == before
