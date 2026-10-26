@@ -11,6 +11,7 @@ no_device = "No Shake yet. Plug the cable in and use Find Shake…, or add one i
 status = "Status"
 live = "Live"
 helicorder = "Helicorder"
+frequencies = "Frequencies"
 data = "Data"
 guide = "Guide"
 settings = "Settings"
@@ -56,6 +57,31 @@ connecting = "connecting…"
 reconnecting = "reconnecting…"
 waiting = "waiting for data…"
 stopped = "stopped"
+
+[labels.freq]
+find = "Find frequencies"
+hint = "Choose a time range, then press the button. A few hours or a day of quiet data works best."
+working = "Analysing…"
+no_data = "No usable data in this range. Download it on the Data page first."
+no_stable = "No stable frequency found. Try a longer range, or check that the data has no gaps."
+found = "Stable frequencies: {freqs}. Stable = present in at least {pct} % of the blocks."
+details = "{hours} h analysed in blocks of {block} min · resolution {res} Hz"
+skipped = "skipped blocks"
+few_blocks = "Only a few blocks: the occurrence percentages are rough. Use a longer range."
+bad_range = "The end must be after the start."
+too_long = "Pick at most {days} days at a time."
+no_response = "Cannot get the instrument response"
+units_need_response = "m/s needs the instrument response (downloaded once from the Internet)."
+linear = "Linear"
+log = "Log"
+peaks_csv = "Peaks .csv"
+spectra_csv = "Spectra .csv"
+col_channel = "Channel"
+col_freq = "Frequency (Hz)"
+col_contrast = "Contrast (dB)"
+col_occurrence = "Present in (%)"
+col_spread = "Spread P10–P90 (Hz)"
+col_stable = "Stable"
 
 [labels.data]
 start = "Start"
@@ -359,6 +385,27 @@ m/s needs the instrument response. The app downloads it once from the Raspberry 
 [help.code]
 short = "ObsPy code that reproduces this exact export."
 detail = "It reads from this laptop's data folder, so it runs without the Shake."
+
+[help.freq_page]
+short = "Finds the frequencies the structure vibrates at."
+detail = """
+Pick a time range (a few hours of quiet data is enough) and press **Find frequencies**.
+
+The range is cut into blocks of 5–30 minutes. Each block gets a spectrum, and the page shows the **median** of all
+blocks. Peaks that stand out by at least 6 dB are listed. **Present in (%)** is the share of blocks where the peak
+appears: a structure or a steady machine is there almost always (80 % or more = **stable**), a footstep or a truck is not.
+
+**Contrast** is how far the peak rises above the spectrum just beside it. **Spread** is how much the peak frequency moves
+from block to block.
+
+A stable peak is a *candidate* for a natural frequency of the structure. It can also come from a machine, a pump or
+a fan. To be sure, switch the suspected source off and on and compare, or measure at another floor of the building.
+Z is up-down; N and E are horizontal (the direction is not checked).
+"""
+
+[help.freq_units]
+short = "counts = raw numbers from the Shake; m/s = ground velocity."
+detail = "Peak frequencies are the same in both. Use **m/s** to compare levels between places or reports; it needs the instrument response, downloaded once from the Internet and then kept."
 
 [help.live_filter]
 short = "Band-pass 1–10 Hz to hide slow drift and high-frequency noise."
