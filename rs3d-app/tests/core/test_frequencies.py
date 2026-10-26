@@ -83,3 +83,13 @@ def test_exports(tmp_path):
     assert write_spectra_csv(a, tmp_path / "s.csv").read_text().splitlines()[0].startswith("frequency_hz,EHZ_p10_db")
     for ext in ("png", "pdf"):
         assert write_figure(a, tmp_path / f"f.{ext}").stat().st_size > 5000
+
+
+def test_a_shorter_last_block_does_not_break_the_analysis(tmp_path):
+    """7600 s -> 300 s blocks and a 100 s tail: every block must share one frequency axis."""
+    write_day(tmp_path, "EHZ", synthetic(7600, (4.7,)))
+    sel = Selection("AM", "R77A7", "00", T0, T0 + 7600, channels=("EHZ",))
+    a = analyse(Store(tmp_path), sel)
+    r = a.channels["EHZ"]
+    assert r.n_blocks == 26 and round(r.peaks[0].freq, 1) == 4.7
+    assert sum(a.skipped.values()) == 0
