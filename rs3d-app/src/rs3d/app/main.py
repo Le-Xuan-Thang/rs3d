@@ -37,4 +37,5 @@ def run(port: int | None = None, show: bool = True, native: bool = False) -> Non
     state = AppState(AppPaths.default(), preload=True)
     build(state)
     ui.run(title="RS3D", host="127.0.0.1", port=port or free_port(), show=show, native=native,
-           reload=False, favicon="🌍", show_welcome_message=True)
+           reload=False, favicon="🌍", show_welcome_message=not native,
+           **({"window_size": (1400, 900)} if native else {}))

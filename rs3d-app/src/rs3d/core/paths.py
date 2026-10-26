@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 from platformdirs import user_data_dir
 
 ENV_DATA_DIR = "RS3D_DATA_DIR"
+PORTABLE_MARKER = "portable.txt"  # next to the packaged exe: keep all data in ./data beside it
 
 
 @dataclass(frozen=True)
@@ -17,9 +19,16 @@ class AppPaths:
 
     @classmethod
     def default(cls) -> "AppPaths":
-        """$RS3D_DATA_DIR if set, else the OS data folder (e.g. %LOCALAPPDATA%\\rs3d)."""
+        """$RS3D_DATA_DIR if set, else ./data beside a packaged exe in portable mode, else the OS data folder
+        (e.g. %LOCALAPPDATA%\\rs3d)."""
         override = os.environ.get(ENV_DATA_DIR)
-        return cls(Path(override) if override else Path(user_data_dir("rs3d", appauthor=False)))
+        if override:
+            return cls(Path(override))
+        if getattr(sys, "frozen", False):
+            exe_dir = Path(sys.executable).parent
+            if (exe_dir / PORTABLE_MARKER).exists():
+                return cls(exe_dir / "data")
+        return cls(Path(user_data_dir("rs3d", appauthor=False)))
 
     @property
     def config(self) -> Path:

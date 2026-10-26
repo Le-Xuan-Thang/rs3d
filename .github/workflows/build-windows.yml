@@ -1,0 +1,52 @@
+name: Build Windows
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: rs3d-app
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - run: uv run python -m pytest -q
+
+  build:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: choco install innosetup -y --no-progress
+      - run: powershell -File packaging/build_windows.ps1
+        env:
+          PATH: ${{ env.PATH }};C:\Program Files (x86)\Inno Setup 6
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RS3D-windows
+          path: |
+            rs3d-app/dist/RS3D-Portable-*.zip
+            rs3d-app/dist/RS3D-Setup-*.exe
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: RS3D-windows
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            RS3D-Portable-*.zip
+            RS3D-Setup-*.exe

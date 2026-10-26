@@ -19,10 +19,17 @@ dependencies = [
 [project.scripts]
 rs3d-app = "rs3d.cli:main"
 
+[project.optional-dependencies]
+desktop = ["pywebview>=5"]
+
+[project.gui-scripts]
+rs3d-desktop = "rs3d.desktop:main"
+
 [dependency-groups]
 dev = [
     "playwright>=1.64.0",
     "pytest>=8.0",
+    "pyinstaller>=6.10",
 ]
 
 [build-system]
