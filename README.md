@@ -1,3 +1,11 @@
+<p align="center"><img src="rs3d-app/assets/logo/png/rs3d-github-banner-1280x640.png" alt="RS3D: seismic data explorer" width="100%"></p>
+
+<p align="center">
+  <a href="https://github.com/Le-Xuan-Thang/rs3d/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Le-Xuan-Thang/rs3d?color=0B4F6C"></a>
+  <a href="LICENSE"><img alt="Licence: GPL-3.0-or-later" src="https://img.shields.io/badge/licence-GPL--3.0--or--later-F15A24"></a>
+  <img alt="Platforms" src="https://img.shields.io/badge/platform-Windows%20%C2%B7%20Linux%20%C2%B7%20macOS-475569">
+</p>
+
 # NCREP Raspberry Shake
 
 Tools and documentation for a Raspberry Shake 3D seismograph (station R77A7).
@@ -7,6 +15,9 @@ Tools and documentation for a Raspberry Shake 3D seismograph (station R77A7).
 [`rs3d-app/`](rs3d-app/) is a local web application (Python + NiceGUI) to check the Shake's health, watch the ground
 move live with an on-screen event alert, download and inspect recorded days, and browse a 24-hour helicorder. It runs
 on your own laptop and works without Internet.
+
+**Windows:** download the installer or the portable zip from the
+[latest release](https://github.com/Le-Xuan-Thang/rs3d/releases/latest). From source:
 
 ```bash
 cd rs3d-app

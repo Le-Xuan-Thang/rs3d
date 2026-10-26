@@ -6,7 +6,10 @@ line under **Unreleased** in the same commit or pull request that makes it.
 
 ## Unreleased
 
+## 0.2.1
+
 ### Changed
+- README: hero banner, badges and Windows download instructions.
 - New logo and colours: the app header, browser tab, Windows `RS3D.exe` and installer now use the RS3D icon.
 
 ## 0.2.0

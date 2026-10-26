@@ -1,4 +1,10 @@
-<p align="center"><img src="assets/logo/png/lockups/rs3d-horizontal-light.png" alt="RS3D" width="320"></p>
+<p align="center"><img src="assets/logo/png/rs3d-github-banner-1280x640.png" alt="RS3D: seismic data explorer" width="100%"></p>
+
+<p align="center">
+  <a href="https://github.com/Le-Xuan-Thang/rs3d/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Le-Xuan-Thang/rs3d?color=0B4F6C"></a>
+  <a href="../LICENSE"><img alt="Licence: GPL-3.0-or-later" src="https://img.shields.io/badge/licence-GPL--3.0--or--later-F15A24"></a>
+  <img alt="Platforms" src="https://img.shields.io/badge/platform-Windows%20%C2%B7%20Linux%20%C2%B7%20macOS-475569">
+</p>
 
 # RS3D
 
@@ -30,6 +36,13 @@ Internet. It is not an official Raspberry Shake product.
 
 Counts or ground velocity (m/s, using the instrument response), UTC or local time, and a zero-phase band-pass are
 available wherever data are shown. Gaps are never filled: they stay gaps in plots, spectrograms and statistics.
+
+## Download (Windows)
+
+Get the latest **RS3D-Setup** installer or the **RS3D-Portable** zip from the
+[Releases page](https://github.com/Le-Xuan-Thang/rs3d/releases/latest). The portable zip needs no installation: unzip it
+anywhere and run `RS3D.exe`; your data stays in a `data` folder beside it. The files are not code-signed, so Windows
+SmartScreen shows a warning: choose **More info → Run anyway**.
 
 ## Quick start
 
