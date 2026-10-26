@@ -6,6 +6,8 @@ line under **Unreleased** in the same commit or pull request that makes it.
 
 ## Unreleased
 
+## 0.2.3
+
 ### Fixed
 - Frequencies: **Find frequencies** failed with "setting an array element with a sequence" when the range ended with a
   shorter last block. All blocks now share one spectrum window.
