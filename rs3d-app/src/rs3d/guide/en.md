@@ -50,7 +50,18 @@ Switch to **Helicorder** to see today (UTC) as 48 rows of 30 minutes. Choose the
 
 The Shake keeps only **7 days**: download at least once a week.
 
-## 6. Events
+## 6. Frequencies
+
+Use this page to find the frequencies a structure (a floor, a room, a building) vibrates at.
+
+1. Put the Shake on the structure and record for a few hours, ideally without people walking near it. Download the data on the **Data** page.
+2. Open **Frequencies**, choose **Start** and **End** (or a preset), then press **Find frequencies**.
+3. Read the sentence at the top: *stable frequencies* are peaks present in at least 80 % of the blocks. The chart shows the median spectrum of Z, N and E with the peaks labelled; the table gives each peak's contrast, how often it appears and how much it moves.
+4. Export the picture (**PNG**, **PDF**) or the numbers (**Peaks .csv**, **Spectra .csv**).
+
+A stable peak is a *candidate*: it may be the structure, or a machine, pump or fan. Switch the suspect off and on, or measure on another floor, to be sure. Method: the range is cut into blocks of 5–30 minutes (about 20 blocks), each block gets a Welch spectrum (Hann window, 50 % overlap), the page shows the median and the 10–90 % band, and picks peaks that rise at least 6 dB above their surroundings between 0.7 and 35 Hz. Blocks with gaps or with samples at the digitizer limit are skipped. Developer notes: `docs/dev/frequencies.md`.
+
+## 7. Events
 
 RS3D can tell you when the ground shakes harder than usual. It uses the same STA/LTA trigger as rsudp: it compares a short average (STA, 6 s) with a long average (LTA, 30 s) of the vertical channel (EHZ) after a 0.8 to 9 Hz band-pass. When the ratio rises above **On** (3.95) an event starts; when it falls below **Reset** (0.9) it ends.
 
@@ -61,7 +72,7 @@ RS3D can tell you when the ground shakes harder than usual. It uses the same STA
 
 The detector stays quiet for the first LTA seconds after start-up or after a gap in the data. When a day is scanned, the detector warms up on the stretch of twice the LTA before that day. Events are saved in `events.jsonl` in the data folder. Sound, desktop notification and email are planned.
 
-## 7. Clock
+## 8. Clock
 
 The Shake keeps time with `ntpd`, from Internet servers over Wi-Fi, with the laptop (`169.254.8.11`) as a backup. Check on the Shake:
 
