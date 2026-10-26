@@ -25,9 +25,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
       - run: choco install innosetup -y --no-progress
-      - run: powershell -File packaging/build_windows.ps1
-        env:
-          PATH: ${{ env.PATH }};C:\Program Files (x86)\Inno Setup 6
+      - run: echo "C:\Program Files (x86)\Inno Setup 6" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+      - run: ./packaging/build_windows.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: RS3D-windows
