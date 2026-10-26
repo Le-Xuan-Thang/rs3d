@@ -6,6 +6,14 @@ line under **Unreleased** in the same commit or pull request that makes it.
 
 ## Unreleased
 
+## 0.2.0
+
+### Added
+- Desktop app: `rs3d-app --native` (or `rs3d-desktop`) opens RS3D in its own window.
+- Windows downloads: a portable zip and an installer, built by GitHub Actions and attached to each release.
+- Portable mode: a `portable.txt` file next to `RS3D.exe` keeps all data in a `data` folder beside it.
+- Licence: GPL-3.0-or-later.
+
 ### Added
 - Event alerts (rsudp-style STA/LTA trigger) on the vertical channel. Defaults: STA 6 s, LTA 30 s, on 3.95, reset 0.9,
   band-pass 0.8 to 9 Hz. All values are editable in Settings → Events.
