@@ -293,14 +293,22 @@ detail = "The Shake needs space for its archive (about 85 MB per day)."
 [help.archive]
 short = "Days stored on the Shake, and how long it keeps them."
 detail = """
-The Shake writes one miniSEED file per channel per day and deletes days older than its retention (`archkeep`, 7 days here).
+The Shake writes one miniSEED file per channel per day and deletes days older than its retention (`archkeep`).
+RS3D expects 30 days; it warns when the Shake keeps fewer.
 
-Download data at least once a week, or raise the retention in the Shake web page.
+Whatever the retention, download the days you need on the **Data** page before they are deleted.
 """
 
 [help.archive.none]
 short = "No archive found on the Shake."
 detail = "Archiving may be disabled in the Shake web settings. Live data still works."
+
+[help.archive.keep]
+short = "The Shake keeps fewer days than the 30 RS3D expects."
+detail = """
+Raise the archive retention (`archkeep`) to 30 days in the Shake web settings. 30 days need about 2.6 GB on the SD card
+(about 85 MB per day), so check **Storage** first. Steps for developers: `docs/dev/archive-retention.md`.
+"""
 
 [help.archive.atrisk]
 short = "Some days will soon be deleted on the Shake and are not downloaded."

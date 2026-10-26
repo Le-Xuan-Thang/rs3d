@@ -131,8 +131,15 @@ def test_storage_warns_below_ten_percent():
 def test_remote_days_and_archive_ok():
     listing = "/x/EHZ.D/:\nAM.R77A7.00.EHZ.D.2026.284\nAM.R77A7.00.EHZ.D.2026.285"
     assert remote_days(listing) == {date(2026, 10, 11), date(2026, 10, 12)}
-    c = archive_check(listing, {"other": {"archkeep": 7}}, set(), TODAY)
-    assert c.level is Level.OK and c.value == "2026-10-11 → 2026-10-12 · keeps 7 days"
+    c = archive_check(listing, {"other": {"archkeep": 30}}, set(), TODAY)
+    assert c.level is Level.OK and c.value == "2026-10-11 → 2026-10-12 · keeps 30 days"
+
+
+def test_archive_warns_when_the_shake_keeps_fewer_than_the_target():
+    listing = "AM.R77A7.00.EHZ.D.2026.284\nAM.R77A7.00.EHZ.D.2026.285"
+    c = archive_check(listing, {"other": {"archkeep": 7}}, {date(2026, 10, 11), date(2026, 10, 12)}, TODAY)
+    assert c.level is Level.WARN and c.help_id == "archive.keep" and c.value.endswith("keeps 7 days (target 30)")
+    assert archive_check(listing, {}, set(), TODAY).level is Level.OK  # retention unknown: nothing to compare
 
 
 def test_archive_none():
