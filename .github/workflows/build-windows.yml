@@ -41,11 +41,27 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           name: RS3D-windows
+      - name: Release notes from CHANGELOG.md
+        working-directory: ${{ github.workspace }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          {
+            echo "## What's new in ${version}"
+            awk -v v="## ${version}" '$0 == v {f=1; next} /^## /{f=0} f' CHANGELOG.md | sed '/./,$!d'
+            echo
+            echo "## Download"
+            echo "- **RS3D-Setup-${version}.exe**: Windows installer."
+            echo "- **RS3D-Portable-${version}.zip**: portable version (unzip and run RS3D.exe; data stays in a \`data\` folder beside it)."
+            echo
+            echo "Full history: [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/main/CHANGELOG.md)"
+          } > release-notes.md
       - uses: softprops/action-gh-release@v3
         with:
+          body_path: release-notes.md
           files: |
             RS3D-Portable-*.zip
             RS3D-Setup-*.exe
