@@ -44,7 +44,7 @@ The **Helicorder** page shows one day of one channel as 48 rows of 30 minutes (i
 ## 5. Data
 
 1. Choose **Start** and **End**, use **Presets**, or drag on the coverage bar.
-2. **Download & preview** copies the needed day files from the Shake.
+2. **Download & preview** copies from the Shake only the part of each day file that covers your Start–End (the line above the button says how many parts and about how many MB). Parts you already have are not copied again.
 3. Choose channels, band-pass filter and units (counts or m/s).
 4. Export as **miniSEED**, **CSV**, **PNG**, **PDF**, or get the **Code** (ObsPy) to reproduce it.
 

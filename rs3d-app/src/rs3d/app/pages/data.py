@@ -29,10 +29,11 @@ ZOOMS = ("week", "day", "hour")
 MAX_IMPORT_BYTES = 2_000_000_000
 
 
-def files_needed(remote: set, local_days_by_channel: dict, start: UTCDateTime, end: UTCDateTime,
-                 channels: tuple[str, ...]) -> int:
-    return sum(len(archive.days_to_fetch(remote, local_days_by_channel.get(ch, set()), start.date,
-                                         (end - 1e-6).date)) for ch in channels)
+def download_text(jobs: list) -> str:
+    """'To download: 3 parts, about 1.2 MB' (the parts of the day files that cover the selection)."""
+    mb = archive.estimate_bytes(jobs) / 1e6
+    size = f"{mb:.1f} MB" if mb < 100 else f"{mb:.0f} MB"
+    return f"{label('data.files_needed')}: {len(jobs)} · {size}" if jobs else f"{label('data.files_needed')}: 0"
 
 
 def scan_dates(start: UTCDateTime, end: UTCDateTime, available: set) -> list:
@@ -210,9 +211,9 @@ def register(state: AppState) -> None:
             end_in.value = timeutil.to_text(sel[1], tz.value)
             seconds = int(sel[1] - sel[0])
             duration.text = f"{seconds // 3600} h {seconds % 3600 // 60:02d} m {seconds % 60:02d} s"
-            local = {ch: state.store.days(net, sta, loc, ch) for ch in channels}
-            n = files_needed(ctx["remote"], local, sel[0], sel[1], selection().channels)
-            needed.text = f"{label('data.files_needed')}: {n}"
+            jobs = archive.plan_downloads(state.store, net, sta, loc, selection().channels, ctx["remote"],
+                                          sel[0], sel[1])
+            needed.text = download_text(jobs)
 
         def redraw_bar() -> None:
             view = ctx["view"]
@@ -386,9 +387,9 @@ def register(state: AppState) -> None:
                     if is_device:
                         try:
                             with state.shell(device) as sh:
-                                archive.sync(sh.sftp(), state.store, net, sta, loc, s.channels,
-                                             s.start.date, (s.end - 1e-6).date,
-                                             progress=lambda i, n, what: status.update(
+                                archive.sync_range(sh.sftp(), state.store, net, sta, loc, s.channels,
+                                                   s.start, s.end,
+                                                   progress=lambda i, n, what: status.update(
                                                  text=f"{label('data.downloading')} {i}/{n}: {what}"))
                         except Exception as exc:  # offline: use what is already on the laptop
                             status["text"] = str(exc)

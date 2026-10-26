@@ -101,7 +101,7 @@ local = "Local"
 week = "Week"
 day = "Day"
 hour = "Hour"
-files_needed = "Files to download"
+files_needed = "To download"
 channels = "Channels"
 filter = "Band-pass"
 units = "Units"
@@ -391,8 +391,15 @@ each other.
 """
 
 [help.files_needed]
-short = "Day files that will be copied from the Shake before preview."
-detail = "Today's file is always copied again because the Shake keeps writing to it."
+short = "Parts of the Shake's day files that cover your selection and are not on this laptop yet."
+detail = """
+**Download & preview** copies only the part of each day file that covers **Start** to **End** (about 330 bytes per
+second per channel), not the whole day. The number is how many pieces will be copied (one per channel and day) and
+roughly how big they are.
+
+Parts you already have are not copied again. A later selection in the same day adds its part to the same file. If the
+Shake's file cannot be read part by part, the whole day file is copied instead.
+"""
 
 [help.units]
 short = "counts = raw digitizer values; m/s = ground velocity."

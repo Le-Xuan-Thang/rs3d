@@ -14,6 +14,9 @@ line under **Unreleased** in the same commit or pull request that makes it.
 ### Changed
 - Data page: a colour legend under the time strip (green on this laptop, grey only on the Shake, red no data, blue your
   selection) with a clearer (?) explanation.
+- Data page: **Download & preview** copies only the part of each day file that covers the selected time range instead
+  of the whole day, and shows how many parts and about how many MB. Parts already on the laptop are not copied
+  again. Developer notes in `rs3d-app/docs/dev/partial-download.md`.
 
 ## 0.2.2
 
