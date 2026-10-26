@@ -35,8 +35,9 @@ def level_icon(level: Level) -> None:
 
 def frame(state: AppState, page: str) -> Device | None:
     """Header + left drawer with devices and pages. Returns the current device (or None)."""
-    ui.colors(primary="#2f6fde")
+    ui.colors(primary="#0B4F6C", accent="#F15A24")
     with ui.header().classes("items-center py-1 px-3 bg-primary"):
+        ui.image("/static/rs3d-icon.svg").classes("w-8 h-8 rounded bg-white p-px")
         ui.label(label("app")).classes("text-lg font-bold")
         ui.label("·").classes("opacity-60")
         ui.label(label(f"nav.{page}"))
