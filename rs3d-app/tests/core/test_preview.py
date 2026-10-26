@@ -16,20 +16,22 @@ def write(root, channel, data):
     tr.write(str(path), format="MSEED")
 
 
-def test_preview_decimates_the_waveform_and_the_map_follows_the_frequency(tmp_path):
+def test_preview_decimates_the_waveform_and_removes_the_offset(tmp_path):
     t = np.arange(3600 * 100) / 100.0
-    x = 100000 + np.where(t < 1800, 800 * np.sin(2 * np.pi * 5 * t), 800 * np.sin(2 * np.pi * 12 * t))
-    write(tmp_path, "EHZ", x + np.random.default_rng(0).normal(0, 20, len(t)))
+    write(tmp_path, "EHZ", 100000 + 800 * np.sin(2 * np.pi * 5 * t) + np.random.default_rng(0).normal(0, 20, len(t)))
     p = build_preview(Store(tmp_path), Selection("AM", "R77A7", "00", T0, T0 + 3600, channels=("EHZ",)))
     tt, vv = p.waveforms["EHZ"]
-    assert len(tt) <= 2100 and abs(np.nanmedian(vv)) < 50  # offset removed
-    times, freqs, db = p.maps["EHZ"]
-    assert freqs.max() <= 40.0 and db.shape == (len(freqs), len(times))
-    first, second = db[:, times < T0.timestamp + 1500], db[:, times > T0.timestamp + 2100]
-    assert abs(freqs[np.nanmean(first, axis=1).argmax()] - 5) < 0.5
-    assert abs(freqs[np.nanmean(second, axis=1).argmax()] - 12) < 0.5
+    assert len(tt) <= 2100 and abs(np.nanmedian(vv)) < 50
+    assert vv.max() > 700 and vv.min() < -700  # min/max decimation keeps the peaks
+
+
+def test_preview_loads_only_the_asked_channels(tmp_path):
+    for ch in ("EHZ", "EHN"):
+        write(tmp_path, ch, np.zeros(60000))
+    p = build_preview(Store(tmp_path), Selection("AM", "R77A7", "00", T0, T0 + 600, channels=("EHN",)))
+    assert list(p.waveforms) == ["EHN"]
 
 
 def test_preview_of_an_empty_range_is_empty(tmp_path):
     p = build_preview(Store(tmp_path), Selection("AM", "R77A7", "00", T0, T0 + 600, channels=("EHZ",)))
-    assert p.waveforms == {} and p.maps == {}
+    assert p.waveforms == {}

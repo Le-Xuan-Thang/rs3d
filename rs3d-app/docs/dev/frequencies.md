@@ -8,7 +8,7 @@ The page finds stable spectral peaks in a time range of local data. It follows t
 | File | What |
 |------|------|
 | `src/rs3d/core/frequencies.py` | analysis: blocks, Welch PSD, median, peak picking, occurrence, `stable_lines` |
-| `src/rs3d/core/preview.py` | decimated waveforms and the frequency-versus-time map for the chosen range |
+| `src/rs3d/core/preview.py` | decimated waveform of the chosen channel and range |
 | `src/rs3d/core/frequencies_export.py` | peaks CSV, spectra CSV, PNG/PDF figure |
 | `src/rs3d/app/pages/frequencies.py` | the page (`/frequencies`) |
 | `src/rs3d/app/charts.py` `frequency_options` | the ECharts options |
@@ -31,15 +31,19 @@ The page finds stable spectral peaks in a time range of local data. It follows t
 
 All the thresholds are module constants at the top of `frequencies.py`.
 
-## Preview (waveform, box zoom, frequency versus time)
+## Preview (waveform and box zoom)
 
-`build_preview` loads a day at a time. Waveforms are min/max decimated (about 2000 points per channel, offset removed
-with the median); the map is `core.spectro.spectrogram` (window from `window_for`) cut at `FMAX` (40 Hz) and averaged
-down to about 480 columns by 320 rows. The page draws it with `preview_waveform_options` and `spectrogram_options`.
+`build_preview` loads a day at a time, only the selected channel. The waveform is min/max decimated (about 2000
+points, offset removed with the median) and drawn by `preview_waveform_options`. Changing the channel reloads it and
+clears the result, because **Find frequencies** analyses the same single channel.
 
 Box zoom: the waveform chart has a horizontal `brush`; the crop button switches the drag on (`takeGlobalCursor`),
 `box_range` turns the `brushEnd` event into seconds, and the zoomed range replaces Start/End and reloads the preview.
 `view["base"]` remembers the range the user typed or picked, for the fit button. The preview shows counts only.
+
+The layout follows the owner's sketch: station and time range in one row; Show data, Channel and zoom buttons under
+it; the waveform; Find frequencies; the result (sentence, PSD graph, table). A frequency-versus-time map was tried and
+dropped on purpose.
 
 ## Limits worth knowing
 
@@ -52,6 +56,5 @@ Box zoom: the waveform chart has a horizontal `brush`; the crop button switches 
 ## Ideas not done
 
 - Energy per band and the quiet-versus-active window comparison from the study.
-- Time-frequency strip for the whole range.
 - Progress bar driven by the `progress` callback of `analyse` (the page shows an indeterminate wait only).
 - Jump from a Data page selection to this page with `?start=&end=` (the page already reads those parameters).

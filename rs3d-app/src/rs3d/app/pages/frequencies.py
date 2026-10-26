@@ -10,8 +10,8 @@ from nicegui import run, ui
 from obspy import UTCDateTime
 
 from rs3d.app import timeutil
-from rs3d.app.charts import frequency_options, preview_waveform_options, spectrogram_options
-from rs3d.app.detail import box_from_event, inventory_for
+from rs3d.app.charts import frequency_options, preview_waveform_options
+from rs3d.app.detail import inventory_for
 from rs3d.app.latest import LatestOnly
 from rs3d.app.pages.data import default_range, station_choices
 from rs3d.app.state import AppState
@@ -62,7 +62,8 @@ def peak_rows(a: Analysis) -> list[dict]:
 
 def register(state: AppState) -> None:
     @ui.page("/frequencies")
-    def frequencies_page(station: str | None = None, start: str | None = None, end: str | None = None) -> None:
+    def frequencies_page(station: str | None = None, start: str | None = None, end: str | None = None,
+                         channel: str | None = None) -> None:
         device = frame(state, "frequencies")
         choices = station_choices(state, device)
         if not choices:
@@ -85,49 +86,48 @@ def register(state: AppState) -> None:
         view = {"base": tuple(sel), "preview": None, "box": False}
         latest = LatestOnly()
 
-        with ui.row().classes("items-center gap-2"):
-            picker = ui.select(choices, value=key, label=label("data.station")).props("dense").classes("w-56")
-            picker.on_value_change(lambda e: ui.navigate.to("/frequencies?" + urlencode({"station": e.value})))
+        # ------------------------------------------------------------ 1. station and time range
+        with ui.row().classes("items-start gap-4"):
+            with ui.column().classes("gap-0"):
+                picker = ui.select(choices, value=key, label=label("data.station")).props("dense").classes("w-56")
+                picker.on_value_change(lambda e: ui.navigate.to("/frequencies?" + urlencode({"station": e.value})))
+            with ui.row().classes("items-center gap-2 border rounded px-2 py-1"):
+                start_in = ui.input(label("data.start")).props("dense").classes("w-48 font-mono")
+                end_in = ui.input(label("data.end")).props("dense").classes("w-48 font-mono")
+                with ui.button(icon="schedule").props("flat dense").tooltip(label("data.presets")):
+                    with ui.menu():
+                        for p in PRESETS:
+                            ui.menu_item(label(f"preset.{p}"), on_click=lambda p=p: apply_preset(p))
+                tz = ui.toggle({False: label("data.utc"), True: label("data.local")}, value=state.use_local_time) \
+                    .props("dense no-caps")
+                units = ui.toggle({"counts": "counts", "m/s": "m/s"}, value="counts").props("dense no-caps")
+                if not has_response:
+                    units.tooltip(label("freq.units_need_response"))
+                help_icon("freq_units")
             help_icon("freq_page")
 
-        with ui.row().classes("items-center gap-2"):
-            start_in = ui.input(label("data.start")).props("dense").classes("w-48 font-mono")
-            end_in = ui.input(label("data.end")).props("dense").classes("w-48 font-mono")
-            with ui.button(icon="schedule").props("flat dense").tooltip(label("data.presets")):
-                with ui.menu():
-                    for p in PRESETS:
-                        ui.menu_item(label(f"preset.{p}"), on_click=lambda p=p: apply_preset(p))
-            tz = ui.toggle({False: label("data.utc"), True: label("data.local")}, value=state.use_local_time) \
-                .props("dense no-caps")
-            units = ui.toggle({"counts": "counts", "m/s": "m/s"}, value="counts").props("dense no-caps")
-            if not has_response:
-                units.tooltip(label("freq.units_need_response"))
-            help_icon("freq_units")
-
-        with ui.row().classes("items-center gap-2"):
-            ui.button(label("freq.show"), icon="visibility", on_click=lambda: show_preview()).props("flat dense no-caps")
-            box_button = ui.button(icon="crop_free", on_click=lambda: toggle_box()).props("flat dense round data-testid=freq-box") \
-                .tooltip(label("freq.box_zoom")).mark("freq-box")
-            ui.button(icon="fit_screen", on_click=lambda: reset_zoom()).props("flat dense round data-testid=freq-reset") \
-                .tooltip(label("freq.reset_zoom")).mark("freq-reset")
+        # ------------------------------------------------------------ 2. show data, channel, zoom
+        with ui.row().classes("items-center gap-3"):
+            ui.button(label("freq.show"), icon="visibility", on_click=lambda: show_preview()).props("no-caps color=accent")
+            with ui.row().classes("items-center gap-1"):
+                ui.label(label("freq.channel")).classes("text-sm text-grey-7")
+                channel_pick = ui.toggle(list(channels), value=channel if channel in channels else channels[0]) \
+                    .props("dense no-caps")
+            box_button = ui.button(icon="crop_free", on_click=lambda: toggle_box()).props(
+                "flat dense round data-testid=freq-box").tooltip(label("freq.box_zoom")).mark("freq-box")
+            ui.button(icon="fit_screen", on_click=lambda: reset_zoom()).props(
+                "flat dense round data-testid=freq-reset").tooltip(label("freq.reset_zoom")).mark("freq-reset")
             help_icon("freq_preview")
             preview_note = ui.label("").classes("text-sm text-grey-7")
-        wave_chart = ui.echart({"series": []}).classes("w-full").style("height: 32vh")
+        wave_chart = ui.echart({"series": []}).classes("w-full").style("height: 30vh")
         wave_chart.set_visibility(False)
-        with ui.row().classes("items-center gap-2"):
-            map_title = ui.label(label("freq.map")).classes("font-bold")
-            map_channel = ui.toggle(list(channels), value=channels[0]).props("dense no-caps")
-            map_title.set_visibility(False)
-            map_channel.set_visibility(False)
-        map_chart = ui.echart({"series": []}).classes("w-full").style("height: 30vh")
-        map_chart.set_visibility(False)
 
+        # ------------------------------------------------------------ 3. find frequencies and the result
         with ui.row().classes("items-center gap-3"):
             go = ui.button(label("freq.find"), icon="search").props("no-caps color=accent").mark("freq-find")
             progress = ui.linear_progress(value=0, show_value=False).classes("w-48")
             progress.set_visibility(False)
             note = ui.label(label("freq.hint")).classes("text-sm text-grey-7")
-
         result_box = ui.column().classes("w-full gap-2")
 
         def write_fields() -> None:
@@ -136,7 +136,6 @@ def register(state: AppState) -> None:
 
         def apply_preset(name: str) -> None:
             sel[0], sel[1] = timeutil.preset_range(name, UTCDateTime(), tz.value)
-            view["base"] = tuple(sel)
             write_fields()
             ui.timer(0.01, show_preview, once=True)
 
@@ -164,14 +163,14 @@ def register(state: AppState) -> None:
         tz.on_value_change(on_tz)
 
         async def show_preview(user: bool = True) -> None:
-            """Load and draw the chosen range (waveforms and frequency-versus-time map). `user`: the range was typed
-            or picked, so it is also what Reset zoom returns to."""
+            """Load and draw the chosen channel for the chosen range. `user`: the range was typed or picked, so it
+            is also what the fit button returns to."""
             if not read_fields():
                 return
             if user:
                 view["base"] = tuple(sel)
             token = latest.next()
-            s = Selection(net, sta, loc, sel[0], sel[1], channels=channels)
+            s = Selection(net, sta, loc, sel[0], sel[1], channels=(channel_pick.value,))
             preview_note.text = label("freq.loading")
             try:
                 p = await run.io_bound(build_preview, state.store, s)
@@ -191,31 +190,22 @@ def register(state: AppState) -> None:
                 return
             has = bool(p.waveforms)
             preview_note.text = "" if has else label("freq.no_data")
-            for item in (wave_chart, map_title, map_channel, map_chart):
-                item.set_visibility(has)
+            wave_chart.set_visibility(has)
             if not has:
                 return
             wave_chart.options.clear()
             wave_chart.options.update(preview_waveform_options(p.waveforms, (p.start, p.end), not tz.value))
             wave_chart.run_chart_method("setOption", wave_chart.options, True)
-            if box_on():
+            if view["box"]:
                 apply_cursor()
-            draw_map()
 
-        def draw_map(_=None) -> None:
-            p = view["preview"]
-            if p is None or map_channel.value not in p.maps:
-                map_chart.set_visibility(False)
-                return
-            map_chart.set_visibility(True)
-            map_chart.options.clear()
-            map_chart.options.update(spectrogram_options(*p.maps[map_channel.value], use_utc=not tz.value))
-            map_chart.run_chart_method("setOption", map_chart.options, True)
+        async def on_channel(_=None) -> None:
+            result["analysis"] = None
+            result_box.clear()
+            note.text = label("freq.hint")
+            await show_preview(user=False)
 
-        map_channel.on_value_change(draw_map)
-
-        def box_on() -> bool:
-            return view["box"]
+        channel_pick.on_value_change(on_channel)
 
         def apply_cursor() -> None:
             wave_chart.run_chart_method("dispatchAction", {
@@ -256,7 +246,7 @@ def register(state: AppState) -> None:
                 except Exception as exc:
                     ui.notify(f"{label('freq.no_response')}: {exc}", type="negative", multi_line=True)
                     return
-            s = Selection(net, sta, loc, sel[0], sel[1], channels=channels, units=units.value)
+            s = Selection(net, sta, loc, sel[0], sel[1], channels=(channel_pick.value,), units=units.value)
             go.disable()
             progress.set_visibility(True)
             note.text = label("freq.working")
