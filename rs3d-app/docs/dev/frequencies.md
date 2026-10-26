@@ -8,6 +8,7 @@ The page finds stable spectral peaks in a time range of local data. It follows t
 | File | What |
 |------|------|
 | `src/rs3d/core/frequencies.py` | analysis: blocks, Welch PSD, median, peak picking, occurrence, `stable_lines` |
+| `src/rs3d/core/preview.py` | decimated waveforms and the frequency-versus-time map for the chosen range |
 | `src/rs3d/core/frequencies_export.py` | peaks CSV, spectra CSV, PNG/PDF figure |
 | `src/rs3d/app/pages/frequencies.py` | the page (`/frequencies`) |
 | `src/rs3d/app/charts.py` `frequency_options` | the ECharts options |
@@ -29,6 +30,16 @@ The page finds stable spectral peaks in a time range of local data. It follows t
 6. `stable_lines`: peaks with occurrence >= `STABLE` (0.8), merged across channels within 0.15 Hz.
 
 All the thresholds are module constants at the top of `frequencies.py`.
+
+## Preview (waveform, box zoom, frequency versus time)
+
+`build_preview` loads a day at a time. Waveforms are min/max decimated (about 2000 points per channel, offset removed
+with the median); the map is `core.spectro.spectrogram` (window from `window_for`) cut at `FMAX` (40 Hz) and averaged
+down to about 480 columns by 320 rows. The page draws it with `preview_waveform_options` and `spectrogram_options`.
+
+Box zoom: the waveform chart has a horizontal `brush`; the crop button switches the drag on (`takeGlobalCursor`),
+`box_range` turns the `brushEnd` event into seconds, and the zoomed range replaces Start/End and reloads the preview.
+`view["base"]` remembers the range the user typed or picked, for the fit button. The preview shows counts only.
 
 ## Limits worth knowing
 
