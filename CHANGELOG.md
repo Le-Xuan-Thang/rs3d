@@ -11,6 +11,10 @@ line under **Unreleased** in the same commit or pull request that makes it.
   follow the zoom); **Find frequencies** then analyses that channel and range and shows the PSD graph, stable
   frequencies and a peak table.
 
+### Changed
+- Data page: a colour legend under the time strip (green on this laptop, grey only on the Shake, red no data, blue your
+  selection) with a clearer (?) explanation.
+
 ## 0.2.2
 
 (0.2.1 was prepared but never tagged; its changes are included here.)

@@ -10,8 +10,8 @@ from nicegui import run, ui
 from obspy import UTCDateTime
 
 from rs3d.app import timeutil
-from rs3d.app.charts import (coverage_options, psd_options, set_event_areas, set_selection, set_stream_data,
-                             spectrogram_options, waveform_options)
+from rs3d.app.charts import (COLORS, SELECTION, coverage_options, psd_options, set_event_areas, set_selection,
+                             set_stream_data, spectrogram_options, waveform_options)
 from rs3d.app.state import CHANNELS, AppState
 from rs3d.app.strings import label
 from rs3d.app.widgets import frame, help_icon
@@ -141,9 +141,15 @@ def register(state: AppState) -> None:
             ui.button(icon="chevron_left", on_click=lambda: move(-1)).props("flat dense round")
             view_label = ui.label("").classes("font-mono text-sm")
             ui.button(icon="chevron_right", on_click=lambda: move(1)).props("flat dense round")
-            help_icon("coverage")
         bar = ui.echart(coverage_options(ctx["view"], [], tuple(sel), use_utc=not state.use_local_time)) \
             .classes("w-full").style("height: 90px")
+        with ui.row().classes("items-center gap-4 text-sm"):
+            for key, color in (("local", COLORS[State.LOCAL]), ("remote", COLORS[State.REMOTE]),
+                               ("gap", COLORS[State.GAP]), ("selected", SELECTION)):
+                with ui.row().classes("items-center gap-1"):
+                    ui.element("div").classes("w-4 h-3 rounded-sm").style(f"background: {color}")
+                    ui.label(label(f"data.legend_{key}"))
+            help_icon("coverage")
 
         with ui.row().classes("items-center gap-2"):
             needed = ui.label("").classes("text-sm")
