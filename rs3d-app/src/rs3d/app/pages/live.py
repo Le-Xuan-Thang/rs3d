@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from nicegui import ui
+from nicegui import run, ui
 
 from rs3d.app.charts import set_event_areas, set_live_data, waveform_options
 from rs3d.app.state import CHANNELS, AppState
@@ -68,7 +68,7 @@ def register(state: AppState) -> None:
             ui.label(label("no_device")).classes("text-grey-7")
             return
         stream = state.live(device)
-        view = {"paused": False}
+        view = {"paused": False, "busy": False, "drawn": None}
 
         with ui.row().classes("items-center gap-1"):
             status = ui.label("").classes("text-sm text-grey-7")
@@ -106,7 +106,7 @@ def register(state: AppState) -> None:
 
         pause.on_click(toggle_pause)
 
-        def tick() -> None:
+        async def tick() -> None:
             status.text = status_text(stream.state, stream.is_stale(), stream.error)
             kind, text = banner_state(state.event_open, state.event_last, state.use_local_time)
             banner.set_visibility(bool(kind))
@@ -125,15 +125,25 @@ def register(state: AppState) -> None:
             if view["paused"]:
                 return
             end = stream.buffer.latest()
-            if end is None:
+            if end is None or view["busy"]:
                 return
             seconds = window.value
             bandpass = band_for(flt.value, fmin.value, fmax.value)
-            snaps = {ch: stream.buffer.snapshot(ch, seconds, end, max_points=1500, bandpass=bandpass)
-                     for ch in CHANNELS}
-            set_live_data(chart.options, snaps, (end - seconds, end))
-            set_event_areas(chart.options, live_spans(recent, state.event_open, (end - seconds, end)))
-            chart.update()
+            spans = live_spans(recent, state.event_open, (end - seconds, end))
+            drawn = (end, seconds, bandpass, spans)
+            if drawn == view["drawn"]:
+                return  # no new samples and nothing changed: nothing to send to the browser
+            view["busy"] = True
+            try:  # the filter and decimation run off the UI loop, so the page stays responsive
+                snaps = await run.io_bound(lambda: {
+                    ch: stream.buffer.snapshot(ch, seconds, end, max_points=1500, bandpass=bandpass)
+                    for ch in CHANNELS})
+                set_live_data(chart.options, snaps, (end - seconds, end))
+                set_event_areas(chart.options, spans)
+                chart.update()
+                view["drawn"] = drawn
+            finally:
+                view["busy"] = False
 
         def save_segment() -> None:
             end = stream.buffer.latest()
