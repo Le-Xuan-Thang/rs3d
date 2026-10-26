@@ -9,6 +9,7 @@ from pathlib import Path
 from obspy import Stream, UTCDateTime, read
 from obspy.clients.filesystem.sds import Client
 
+from rs3d.core.fetched import Fetched
 from rs3d.core.models import Selection
 
 _DAY_FILE = re.compile(r"^(?P<net>[^.]+)\.(?P<sta>[^.]+)\.(?P<loc>[^.]*)\.(?P<cha>[^.]+)\.D\.(?P<year>\d{4})\.(?P<doy>\d{3})$")
@@ -17,6 +18,7 @@ _DAY_FILE = re.compile(r"^(?P<net>[^.]+)\.(?P<sta>[^.]+)\.(?P<loc>[^.]*)\.(?P<ch
 class Store:
     def __init__(self, root: Path | str) -> None:
         self.root = Path(root)
+        self.fetched = Fetched(self.root / "fetched.json")  # which spans of the Shake's archive were copied
 
     def day_path(self, network: str, station: str, location: str, channel: str, day: date) -> Path:
         doy = day.timetuple().tm_yday

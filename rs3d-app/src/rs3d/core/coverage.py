@@ -67,14 +67,17 @@ def coverage(
 ) -> list[Segment]:
     """Split [start, end] into LOCAL / REMOTE / GAP segments for one channel.
 
-    Time without local data counts as REMOTE when its day exists on the Shake and is
-    either not downloaded yet or is the newest remote day (the file still growing).
+    Time without local data counts as REMOTE when its day exists on the Shake and it was not copied yet:
+    the day has no local file, the day is the newest on the Shake (still growing), or the local file is
+    a partial copy and this time was not asked for. A span that was copied but has no data is a GAP.
     """
     if end <= start:
         raise ValueError("end must be after start")
     spans = local_spans(store, network, station, location, channel, start, end)
     local_days = store.days(network, station, location, channel)
     newest_remote = max(remote_days) if remote_days else None
+    key = store.fetched.key(network, station, location, channel)
+    fetched = store.fetched.spans(key)
 
     cuts = [start, end]  # UTCDateTime is not hashable: dedupe by nanoseconds
     for day in _days_between(start, end):
@@ -94,7 +97,9 @@ def coverage(
             state = State.LOCAL
         else:
             day = mid.date
-            if day in remote_days and (day not in local_days or day == newest_remote):
+            asked = any(s <= mid.timestamp < e for s, e in fetched)
+            whole_copy = day in local_days and not store.fetched.has_day(key, day)
+            if day in remote_days and not asked and (day not in local_days or day == newest_remote or not whole_copy):
                 state = State.REMOTE
             else:
                 state = State.GAP
