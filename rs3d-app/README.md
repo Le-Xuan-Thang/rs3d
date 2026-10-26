@@ -118,7 +118,7 @@ Version 0.1.0 plus the helicorder, spectrogram and manual work.
 
 ## Licence
 
-No licence has been chosen yet. Until one is added, all rights are reserved by the authors.
+GPL-3.0-or-later; see [`../LICENSE`](../LICENSE). Contributions: see [`../CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ## Acknowledgements
 

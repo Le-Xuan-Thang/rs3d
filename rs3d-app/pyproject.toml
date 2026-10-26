@@ -3,6 +3,7 @@ name = "rs3d-app"
 version = "0.1.0"
 description = "Status, live view and data export for Raspberry Shake 3D over Ethernet"
 readme = "README.md"
+license = "GPL-3.0-or-later"
 requires-python = ">=3.11"
 dependencies = [
     "obspy>=1.5.1",

@@ -1,0 +1,17 @@
+name: Bug report
+description: Something does not work
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes: {label: What happened, and what did you expect?}
+    validations: {required: true}
+  - type: textarea
+    id: steps
+    attributes: {label: Steps to reproduce}
+  - type: input
+    id: env
+    attributes: {label: "RS3D version and OS (e.g. 0.1.0, Windows 11 portable)"}
+  - type: textarea
+    id: logs
+    attributes: {label: "Relevant log lines (Settings shows the log folder). Remove passwords and addresses."}

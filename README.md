@@ -36,4 +36,4 @@ main.py, pyproject.toml   leftover project stub (obspy + rsudp); not needed for 
 
 ## Licence
 
-No licence has been chosen yet; all rights are reserved by the authors.
+Licensed under GPL-3.0-or-later; see [LICENSE](LICENSE). To contribute, read [CONTRIBUTING.md](CONTRIBUTING.md).
