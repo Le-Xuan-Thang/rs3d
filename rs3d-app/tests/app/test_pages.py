@@ -113,3 +113,21 @@ def test_helicorder_page_shows_requested_day_and_arrows_move_it(tmp_path):
         user.find(marker="day-prev").click()
         await user.should_see("2026-10-12")
     run(scenario)
+
+
+def test_frequencies_page_without_data_says_so():
+    async def scenario(user):
+        await user.open("/frequencies")
+        await user.should_see("No data in this range")
+    run(scenario)
+
+
+def test_frequencies_page_analyses_the_requested_range(tmp_path):
+    _write_day(tmp_path)
+
+    async def scenario(user):
+        await user.open("/frequencies?start=1791763200&end=1791763800")  # 2026-10-12 00:00-00:10 UTC
+        await user.should_see("Find frequencies")
+        user.find(marker="freq-find").click()
+        await user.should_see("resolution", retries=100)
+    run(scenario)

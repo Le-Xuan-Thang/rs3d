@@ -253,3 +253,33 @@ def spectrum_options(freqs: np.ndarray, amplitude: np.ndarray) -> dict:
             "tooltip": {"trigger": "axis"},
             "series": [{"type": "line", "showSymbol": False, "data": data,
                         "lineStyle": {"width": 1, "color": "#e53935"}}]}
+
+
+FREQ_COLORS = {"Z": "#0B4F6C", "N": "#F15A24", "E": "#475569"}
+
+
+def frequency_options(channels: dict, units: str, log: bool = False) -> dict:
+    """Median spectrum per channel (dB) with the peaks marked and labelled in Hz. `channels`: {name: ChannelResult}."""
+    series = []
+    for name, r in channels.items():
+        color = FREQ_COLORS.get(name[-1:], "#888888")
+        keep = r.freqs > 0
+        data = [[round(float(f), 4), None if np.isnan(v) else round(float(v), 2)]
+                for f, v in zip(r.freqs[keep], r.median_db[keep])]
+        peaks = [{"coord": [round(p.freq, 4), round(p.level_db, 2)], "value": f"{p.freq:.2f}"} for p in r.peaks]
+        series.append({"type": "line", "name": name, "showSymbol": False, "data": data,
+                       "lineStyle": {"width": 1.5, "color": color}, "itemStyle": {"color": color},
+                       "markPoint": {"symbol": "pin", "symbolSize": 42, "data": peaks,
+                                     "label": {"formatter": "{c}", "fontSize": 10},
+                                     "itemStyle": {"color": color}}})
+    return {
+        "animation": False,
+        "grid": {"left": 70, "right": 24, "top": 30, "bottom": 46},
+        "legend": {"top": 0},
+        "xAxis": {"type": "log" if log else "value", "name": "Hz", "nameLocation": "middle", "nameGap": 28,
+                  "min": 0.5 if log else 0, "max": 45 if log else 40},
+        "yAxis": {"type": "value", "scale": True, "nameLocation": "middle", "nameGap": 52,
+                  "name": "dB re 1 (m/s)²/Hz" if units == "m/s" else "dB re 1 count²/Hz"},
+        "tooltip": {"trigger": "axis"},
+        "series": series,
+    }

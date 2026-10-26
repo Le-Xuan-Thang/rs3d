@@ -9,7 +9,7 @@ from rs3d.app.strings import help_text, label
 from rs3d.core.discovery import discover
 from rs3d.core.models import Device, Level
 
-NAV = (("status", "monitor_heart"), ("live", "show_chart"), ("helicorder", "graphic_eq"), ("data", "download"),
+NAV = (("status", "monitor_heart"), ("live", "show_chart"), ("helicorder", "graphic_eq"), ("frequencies", "query_stats"), ("data", "download"),
        ("guide", "menu_book"), ("settings", "settings"))
 LEVEL_ICON = {Level.OK: ("check_circle", "positive"), Level.WARN: ("error", "warning"),
               Level.ERROR: ("cancel", "negative"), Level.SKIPPED: ("remove_circle_outline", "grey-5")}

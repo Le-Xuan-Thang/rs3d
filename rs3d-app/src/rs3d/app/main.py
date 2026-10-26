@@ -7,7 +7,7 @@ from pathlib import Path
 
 from nicegui import app, ui
 
-from rs3d.app.pages import data, guide, helicorder, live, settings, status
+from rs3d.app.pages import data, frequencies, guide, helicorder, live, settings, status
 from rs3d.app.state import AppState
 from rs3d.core.paths import AppPaths
 
@@ -17,7 +17,7 @@ STATIC = Path(__file__).parent / "static"
 
 def build(state: AppState) -> None:
     app.add_static_files("/static", STATIC)
-    for page in (status, live, helicorder, data, guide, settings):
+    for page in (status, live, helicorder, frequencies, data, guide, settings):
         page.register(state)
 
     @ui.page("/")
