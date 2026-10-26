@@ -191,3 +191,25 @@ def _to_velocity(tr, inventory: Inventory | None):
     tr.taper(0.05)
     tr.remove_response(inventory=inventory, output="VEL", pre_filt=(0.2, 0.4, 40.0, 45.0), water_level=60)
     return tr
+
+
+STABLE = 0.8  # a line present in at least this share of the blocks counts as stable
+
+
+def stable_lines(analysis: Analysis, tol: float = 0.15) -> list[tuple[float, list[str], float]]:
+    """[(freq, channels, lowest occurrence)] of the stable peaks, merged across channels, strongest first."""
+    merged: list[dict] = []
+    for ch, r in analysis.channels.items():
+        for p in r.peaks:
+            if p.occurrence < STABLE:
+                continue
+            for m in merged:
+                if abs(m["freq"] - p.freq) <= tol:
+                    m["channels"].append(ch)
+                    m["occ"] = min(m["occ"], p.occurrence)
+                    m["prom"] = max(m["prom"], p.prominence_db)
+                    break
+            else:
+                merged.append({"freq": p.freq, "channels": [ch], "occ": p.occurrence, "prom": p.prominence_db})
+    merged.sort(key=lambda m: -m["prom"])
+    return [(m["freq"], m["channels"], m["occ"]) for m in merged]

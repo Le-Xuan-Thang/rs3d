@@ -60,3 +60,26 @@ def test_no_data_gives_an_empty_analysis(tmp_path):
     sel = Selection("AM", "R77A7", "00", T0, T0 + 3600, channels=("EHZ",))
     a = analyse(Store(tmp_path), sel)
     assert a.channels == {} and a.hours_used == 0
+
+
+def analysed(tmp_path):
+    write_day(tmp_path, "EHZ", synthetic(7200, (4.7, 12.5)))
+    write_day(tmp_path, "EHN", synthetic(7200, (4.7,), seed=1))
+    sel = Selection("AM", "R77A7", "00", T0, T0 + 7200, channels=("EHZ", "EHN"))
+    return analyse(Store(tmp_path), sel)
+
+
+def test_stable_lines_merge_the_same_frequency_across_channels(tmp_path):
+    from rs3d.core.frequencies import stable_lines
+    lines = {round(f, 1): chans for f, chans, _ in stable_lines(analysed(tmp_path))}
+    assert sorted(lines[4.7]) == ["EHN", "EHZ"] and lines[12.5] == ["EHZ"]
+
+
+def test_exports(tmp_path):
+    from rs3d.core.frequencies_export import write_figure, write_peaks_csv, write_spectra_csv
+    a = analysed(tmp_path / "sds")
+    rows = write_peaks_csv(a, tmp_path / "p.csv").read_text().splitlines()
+    assert rows[0].startswith("channel,frequency_hz") and any(r.startswith("EHZ,4.7") for r in rows)
+    assert write_spectra_csv(a, tmp_path / "s.csv").read_text().splitlines()[0].startswith("frequency_hz,EHZ_p10_db")
+    for ext in ("png", "pdf"):
+        assert write_figure(a, tmp_path / f"f.{ext}").stat().st_size > 5000
