@@ -89,6 +89,10 @@ col_spread = "Spread P10–P90 (Hz)"
 col_stable = "Stable"
 
 [labels.data]
+legend_local = "On this laptop"
+legend_remote = "Only on the Shake (will be copied)"
+legend_gap = "No data"
+legend_selected = "Your selection"
 start = "Start"
 end = "End"
 presets = "Presets"
@@ -370,11 +374,20 @@ short = "Quick time ranges."
 detail = "\"Today\" and \"Yesterday\" follow the time zone shown (UTC or Local)."
 
 [help.coverage]
-short = "Green: on this laptop. Grey: only on the Shake. Red: no data."
+short = "Green: on this laptop. Grey: still on the Shake. Red: no data. Blue: your selection."
 detail = """
-- Drag in the lower bar to select a range; drag its handles to change Start/End; drag the middle to move it.
-- Week / Day / Hour and ◀ ▶ change the visible span.
-- Start/End fields and the selection always follow each other.
+The strip shows, for the first channel, what exists for the time you are looking at.
+
+- **Green** — already on this laptop. Preview and export read it directly.
+- **Grey** — recorded and still on the Shake, not copied yet. **Download & preview** copies it. Today's grey part is
+  never turned green for good, because the Shake keeps writing to it.
+- **Red** — no data anywhere: the Shake was off or not recording, or the day is older than the Shake keeps
+  (see **Archive** on the Status page) and was never downloaded. It cannot be recovered.
+- **Blue** — your selection (the lower bar). The time after "now" is left blank.
+
+How to use it: drag in the lower bar to select a range; drag its handles to change Start/End; drag the middle to move it.
+**Week / Day / Hour** and the arrows change the visible span. The Start/End fields and the selection always follow
+each other.
 """
 
 [help.files_needed]
