@@ -1,6 +1,6 @@
 [project]
 name = "rs3d-app"
-version = "0.2.1"
+version = "0.2.2"
 description = "Status, live view and data export for Raspberry Shake 3D over Ethernet"
 readme = "README.md"
 license = "GPL-3.0-or-later"
