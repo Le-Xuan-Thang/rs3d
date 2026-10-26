@@ -137,7 +137,7 @@ def analyse(store: Store, sel: Selection, inventory: Inventory | None = None, *,
     collected: dict[str, list[np.ndarray]] = {ch: [] for ch in sel.channels}
     freqs: dict[str, np.ndarray] = {}
     used = 0.0
-    nperseg = MAX_NPERSEG
+    nperseg: int | None = None
     chunk = 86400  # load one day at a time; day files are what the store reads anyway
     t = sel.start
     while t < sel.end:
@@ -158,7 +158,11 @@ def analyse(store: Store, sel: Selection, inventory: Inventory | None = None, *,
                     if sel.units == "m/s":
                         tr = _to_velocity(tr, inventory)
                     rate = tr.stats.sampling_rate
-                    nperseg = _nperseg(b1 - b0, rate)
+                    if nperseg is None:
+                        nperseg = _nperseg(block_s, rate)  # one window for all blocks: they share a frequency axis
+                    if tr.stats.npts < nperseg:
+                        skipped["short"] += 1
+                        continue
                     f, db = welch_db(tr.data.astype(float), rate, nperseg)
                     freqs[ch] = f
                     collected[ch].append(db)
@@ -169,7 +173,8 @@ def analyse(store: Store, sel: Selection, inventory: Inventory | None = None, *,
             progress(min(1.0, (t - sel.start) / duration))
     channels = {ch: summarise(ch, freqs[ch], np.array(dbs)) for ch, dbs in collected.items() if dbs}
     rate = next((r.freqs[1] for r in channels.values()), 0.0)
-    return Analysis(sel.start, sel.end, sel.units, block_s, nperseg, float(rate), used / 3600.0, skipped, channels)
+    return Analysis(sel.start, sel.end, sel.units, block_s, nperseg or MAX_NPERSEG, float(rate), used / 3600.0,
+                    skipped, channels)
 
 
 def _block_problem(seg: Stream, length_s: float) -> str | None:

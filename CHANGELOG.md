@@ -6,6 +6,10 @@ line under **Unreleased** in the same commit or pull request that makes it.
 
 ## Unreleased
 
+### Fixed
+- Frequencies: **Find frequencies** failed with "setting an array element with a sequence" when the range ended with a
+  shorter last block. All blocks now share one spectrum window.
+
 ### Added
 - Frequencies page: the chosen range is shown first as a waveform of the selected channel with box zoom (Start/End
   follow the zoom); **Find frequencies** then analyses that channel and range and shows the PSD graph, stable
