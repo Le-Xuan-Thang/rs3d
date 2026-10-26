@@ -26,6 +26,9 @@ printf '\n@@wlan\n'; ip -4 -o addr show wlan0 2>/dev/null
 printf '\n@@internet\n'; timeout 4 bash -c "</dev/tcp/1.1.1.1/443" 2>/dev/null && echo ok || echo fail
 """
 
+# How many days of data the Shake should keep. Raise or lower it here; see docs/dev/archive-retention.md.
+ARCHIVE_TARGET_DAYS = 30
+
 ORDER = ("laptop_ip", "seedlink", "channels", "ssh", "clock", "internet", "wifi",
          "storage", "archive", "forwarding", "password")
 SSH_DEPENDENT = ("clock", "internet", "wifi", "storage", "archive", "forwarding", "password")
@@ -89,6 +92,8 @@ def archive_check(listing: str, config: dict, local_days: set[date], today: date
     if at_risk:
         return Check("archive", Level.WARN, value + f" · {len(at_risk)} day(s) about to be deleted",
                      "archive.atrisk", action="download")
+    if keep and keep < ARCHIVE_TARGET_DAYS:
+        return Check("archive", Level.WARN, value + f" (target {ARCHIVE_TARGET_DAYS})", "archive.keep")
     return Check("archive", Level.OK, value, "archive")
 
 

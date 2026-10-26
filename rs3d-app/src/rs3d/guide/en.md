@@ -29,7 +29,7 @@ The password is stored in your operating system's password store, never in a fil
 | Clock | time offset and time source of the Shake |
 | Internet / Wi-Fi | the Shake reaches the Internet (for its clock) |
 | Storage | free space on the Shake's SD card |
-| Archive | days stored on the Shake, retention (7 days) |
+| Archive | days stored on the Shake and how long it keeps them (RS3D expects 30) |
 | Data Forwarding | public data sharing is off |
 | Password | the default password was changed |
 
@@ -48,7 +48,7 @@ The **Helicorder** page shows one day of one channel as 48 rows of 30 minutes (i
 3. Choose channels, band-pass filter and units (counts or m/s).
 4. Export as **miniSEED**, **CSV**, **PNG**, **PDF**, or get the **Code** (ObsPy) to reproduce it.
 
-The Shake keeps only **7 days**: download at least once a week.
+The Shake deletes old days after its retention (RS3D expects **30 days**; the Status page warns if it is lower): download the days you need before they go.
 
 ## 6. Events
 
