@@ -7,8 +7,9 @@ line under **Unreleased** in the same commit or pull request that makes it.
 ## Unreleased
 
 ### Added
-- Frequencies page: the chosen range is shown first as three waveforms with box zoom (Start/End follow the zoom) and a
-  frequency-versus-time map per channel; **Find frequencies** then analyses what is on screen.
+- Frequencies page: the chosen range is shown first as a waveform of the selected channel with box zoom (Start/End
+  follow the zoom); **Find frequencies** then analyses that channel and range and shows the PSD graph, stable
+  frequencies and a peak table.
 
 ## 0.2.2
 
