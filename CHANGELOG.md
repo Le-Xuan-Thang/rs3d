@@ -6,6 +6,10 @@ line under **Unreleased** in the same commit or pull request that makes it.
 
 ## Unreleased
 
+### Added
+- Frequencies page: the chosen range is shown first as three waveforms with box zoom (Start/End follow the zoom) and a
+  frequency-versus-time map per channel; **Find frequencies** then analyses what is on screen.
+
 ## 0.2.2
 
 (0.2.1 was prepared but never tagged; its changes are included here.)

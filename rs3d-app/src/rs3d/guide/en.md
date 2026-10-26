@@ -55,8 +55,8 @@ The Shake deletes old days after its retention (RS3D expects **30 days**; the St
 Use this page to find the frequencies a structure (a floor, a room, a building) vibrates at.
 
 1. Put the Shake on the structure and record for a few hours, ideally without people walking near it. Download the data on the **Data** page.
-2. Open **Frequencies**, choose **Start** and **End** (or a preset), then press **Find frequencies**.
-3. Read the sentence at the top: *stable frequencies* are peaks present in at least 80 % of the blocks. The chart shows the median spectrum of Z, N and E with the peaks labelled; the table gives each peak's contrast, how often it appears and how much it moves.
+2. Open **Frequencies** and choose **Start** and **End** (or a preset). The page draws the data you chose: the three waveforms and, below, **frequency versus time** (colour = power; a steady horizontal line is a stable frequency). Press the crop button and drag across the waveform to **box zoom**: Start and End follow the zoom, and the fit button goes back to the range you chose.
+3. Press **Find frequencies** to analyse what you see. Read the sentence at the top: *stable frequencies* are peaks present in at least 80 % of the blocks. The chart shows the median spectrum of Z, N and E with the peaks labelled; the table gives each peak's contrast, how often it appears and how much it moves.
 4. Export the picture (**PNG**, **PDF**) or the numbers (**Peaks .csv**, **Spectra .csv**).
 
 A stable peak is a *candidate*: it may be the structure, or a machine, pump or fan. Switch the suspect off and on, or measure on another floor, to be sure. Method: the range is cut into blocks of 5–30 minutes (about 20 blocks), each block gets a Welch spectrum (Hann window, 50 % overlap), the page shows the median and the 10–90 % band, and picks peaks that rise at least 6 dB above their surroundings between 0.7 and 35 Hz. Blocks with gaps or with samples at the digitizer limit are skipped. Developer notes: `docs/dev/frequencies.md`.
