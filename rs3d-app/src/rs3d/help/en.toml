@@ -56,10 +56,6 @@ connecting = "connecting…"
 reconnecting = "reconnecting…"
 waiting = "waiting for data…"
 stopped = "stopped"
-mode_wave = "Waveform"
-mode_heli = "Helicorder"
-open_heli = "Open on Helicorder page"
-heli_empty = "No data for this channel yet today."
 
 [labels.data]
 start = "Start"
@@ -359,17 +355,6 @@ detail = "It reads from this laptop's data folder, so it runs without the Shake.
 [help.live_filter]
 short = "Band-pass 1–10 Hz to hide slow drift and high-frequency noise."
 detail = "Applied only to the display. Use the Data page to export filtered data."
-
-[help.live_heli]
-short = "The whole UTC day in 48 rows of 30 minutes; the newest row grows to the right."
-detail = """
-Each row is 30 minutes of one channel, drawn as the lowest and highest value of every 2 seconds, without the DC offset.
-Events are shaded. At start-up the app copies today's data from the Shake's archive, so the day is already filled; if
-the Shake cannot be reached the view starts empty and fills from the live stream. A new day starts at 00:00 UTC.
-
-No filter or physical units here. **Open on Helicorder page** shows the same day with units, filter and zoom, using the
-files in the local store (download today's data on the Data page first to see the newest minutes).
-"""
 
 [help.events]
 short = "Raises an alert when the ground shakes much harder than usual."

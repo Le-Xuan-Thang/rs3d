@@ -88,7 +88,6 @@ class AppState:
         self._preload_lock = threading.Lock()
         self._preloading: set[str] = set()  # hosts whose archive preload is running
         self._preloaded: dict[str, date] = {}  # host -> UTC day that a preload filled
-        self.live_view: dict = {"mode": "wave", "channel": CHANNELS[0], "scale": 1.0}  # Live page choices, this session only
 
     # ---------------------------------------------------------------- settings
     def save_settings(self) -> None:
