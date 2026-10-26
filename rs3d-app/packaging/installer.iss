@@ -18,6 +18,7 @@ PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\RS3D.exe
+SetupIconFile=rs3d.ico
 
 [Files]
 Source: "..\dist\RS3D\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion

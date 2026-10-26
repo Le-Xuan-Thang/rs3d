@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo/png/lockups/rs3d-horizontal-light.png" alt="RS3D" width="320"></p>
+
 # RS3D
 
 **Status, live view, data download and analysis for a Raspberry Shake 3D seismograph, from your laptop.**

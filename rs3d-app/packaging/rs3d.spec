@@ -20,5 +20,5 @@ a = Analysis(
     excludes=["tkinter", "pytest", "playwright"],
 )
 pyz = PYZ(a.pure)
-exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="RS3D", console=False)
+exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="RS3D", console=False, icon="rs3d.ico")
 coll = COLLECT(exe, a.binaries, a.datas, name="RS3D")

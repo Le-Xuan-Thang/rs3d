@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import socket
+from pathlib import Path
 
 from nicegui import app, ui
 
@@ -11,7 +12,11 @@ from rs3d.app.state import AppState
 from rs3d.core.paths import AppPaths
 
 
+STATIC = Path(__file__).parent / "static"
+
+
 def build(state: AppState) -> None:
+    app.add_static_files("/static", STATIC)
     for page in (status, live, helicorder, data, guide, settings):
         page.register(state)
 
@@ -37,5 +42,5 @@ def run(port: int | None = None, show: bool = True, native: bool = False) -> Non
     state = AppState(AppPaths.default(), preload=True)
     build(state)
     ui.run(title="RS3D", host="127.0.0.1", port=port or free_port(), show=show, native=native,
-           reload=False, favicon="🌍", show_welcome_message=not native,
+           reload=False, favicon=STATIC / "rs3d-icon.png", show_welcome_message=not native,
            **({"window_size": (1400, 900)} if native else {}))

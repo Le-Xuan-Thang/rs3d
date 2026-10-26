@@ -1,0 +1,21 @@
+RS3D LOGO KIT — Editable vector masters + raster exports
+
+Concept: waveform event + three-component orientation (Z/N/E). Independent, unofficial software identity.
+Brand colours: Deep teal #0B4F6C; deep background #072F43; seismic orange #F15A24; slate #475569; pale #F1F5F9; white #FFFFFF.
+
+WCAG CONTRAST (AA: >=4.5:1 normal text; >=3:1 large text):
+teal on pale: 8.16:1; AA normal: PASS; AA large: PASS
+slate on pale: 6.92:1; AA normal: PASS; AA large: PASS
+orange on pale: 3.08:1; AA normal: FAIL; AA large: PASS
+white on teal: 8.94:1; AA normal: PASS; AA large: PASS
+white on dark: 14.03:1; AA normal: PASS; AA large: PASS
+orange on dark: 4.16:1; AA normal: FAIL; AA large: PASS
+
+USAGE
+Smallest approved icon: 16 px (use the separate simplified master); ordinary master recommended at 48 px and above.
+Minimum wordmark height: 24 px; clear space: at least 12.5% of icon width around all artwork.
+Do not stretch, rotate, recolor, outline, apply effects, add external-brand marks, or use the orange as small regular text on pale backgrounds.
+The small-size icon intentionally omits axis lettering to preserve recognizability.
+SVGs use editable paths for the icon and wordmark. The banner description remains editable SVG text.
+
+Directories: svg/ editable masters; png/app_icons/ PNG sizes; png/lockups/ logos; references/ original generated visual concepts; rs3d-windows.ico.
