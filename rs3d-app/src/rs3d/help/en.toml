@@ -60,6 +60,11 @@ stopped = "stopped"
 
 [labels.freq]
 find = "Find frequencies"
+show = "Show data"
+box_zoom = "Box zoom: switch on, then drag across the waveform to zoom in. The range above follows."
+reset_zoom = "Back to the range you chose"
+map = "Frequency versus time"
+loading = "Loading the data…"
 hint = "Choose a time range, then press the button. A few hours or a day of quiet data works best."
 working = "Analysing…"
 no_data = "No usable data in this range. Download it on the Data page first."
@@ -401,6 +406,18 @@ from block to block.
 A stable peak is a *candidate* for a natural frequency of the structure. It can also come from a machine, a pump or
 a fan. To be sure, switch the suspected source off and on and compare, or measure at another floor of the building.
 Z is up-down; N and E are horizontal (the direction is not checked).
+"""
+
+[help.freq_preview]
+short = "The data of the range you chose, and which frequencies it holds over time."
+detail = """
+**Waveform:** the range as raw counts (the constant offset removed), drawn as the lowest and highest value of each
+small step so short spikes stay visible. **Box zoom** (the crop button): switch it on, then drag across the waveform.
+The chart zooms in and **Start/End** follow, so **Find frequencies** analyses exactly what you see. The fit button returns
+to the range you typed or picked.
+
+**Frequency versus time:** colour is power in dB (red = strong). A steady horizontal line is a stable frequency;
+a short blob is an event. Choose the channel with Z / N / E. Gaps in the data are left blank.
 """
 
 [help.freq_units]

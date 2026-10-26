@@ -289,3 +289,14 @@ def frequency_options(channels: dict, units: str, log: bool = False) -> dict:
         "tooltip": {"trigger": "axis"},
         "series": series,
     }
+
+
+def preview_waveform_options(waveforms: dict, window: tuple[float, float], use_utc: bool = True) -> dict:
+    """Stacked waveforms (counts, offset removed) of the chosen range, with a horizontal brush for box zoom."""
+    options = waveform_options(tuple(waveforms), use_utc=use_utc)
+    set_live_data(options, waveforms, window)
+    options["toolbox"] = {"show": False}  # no built-in brush buttons: the box-zoom button switches the drag on
+    options["brush"] = {"xAxisIndex": "all", "brushType": "lineX", "brushMode": "single", "transformable": False,
+                        "toolbox": [], "brushStyle": {"borderWidth": 1, "color": "rgba(47,111,222,0.2)",
+                                                      "borderColor": "#2f6fde"}}
+    return options

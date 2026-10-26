@@ -131,3 +131,13 @@ def test_frequencies_page_analyses_the_requested_range(tmp_path):
         user.find(marker="freq-find").click()
         await user.should_see("resolution", retries=100)
     run(scenario)
+
+
+def test_frequencies_page_shows_the_chosen_data_before_analysis(tmp_path):
+    _write_day(tmp_path)
+
+    async def scenario(user):
+        await user.open("/frequencies?start=1791763200&end=1791763800")
+        await user.should_see("Frequency versus time", retries=100)
+        await user.should_see("Find frequencies")
+    run(scenario)
