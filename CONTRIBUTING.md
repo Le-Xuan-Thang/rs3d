@@ -31,7 +31,8 @@ uv run python -m pytest -m e2e     # real-browser tests (needs Google Chrome)
 ## Releases (maintainer)
 
 Update `CHANGELOG.md` and the version in `rs3d-app/pyproject.toml`, merge to `main`, then tag `vX.Y.Z`. The
-`Build Windows` workflow builds the portable zip and installer and attaches them to a GitHub Release.
+`Build Windows` workflow builds the portable zip and installer and attaches them to a GitHub Release. The release
+notes are copied from the `## X.Y.Z` section of `CHANGELOG.md`, so that section must exist before you tag.
 
 ## Reporting security problems
 
