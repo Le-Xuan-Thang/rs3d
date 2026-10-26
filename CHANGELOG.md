@@ -6,9 +6,20 @@ line under **Unreleased** in the same commit or pull request that makes it.
 
 ## Unreleased
 
-## 0.2.1
+## 0.2.2
+
+(0.2.1 was prepared but never tagged; its changes are included here.)
+
+### Added
+- Frequencies page: pick a time range and press **Find frequencies** to get the stable frequencies of a structure,
+  a median spectrum per channel with labelled peaks, a peak table, and PNG/PDF/CSV export. Developer notes in
+  `rs3d-app/docs/dev/frequencies.md`.
+- Status: the Archive check warns when the Shake keeps fewer than 30 days (`ARCHIVE_TARGET_DAYS`). Developer manual in
+  `rs3d-app/docs/dev/archive-retention.md`.
 
 ### Changed
+- Live page: the helicorder view is removed (the Helicorder page stays). Redraws are lighter: skipped when nothing
+  changed, computed off the UI loop, and about 40 % less data sent to the browser.
 - README: hero banner, badges and Windows download instructions.
 - New logo and colours: the app header, browser tab, Windows `RS3D.exe` and installer now use the RS3D icon.
 
